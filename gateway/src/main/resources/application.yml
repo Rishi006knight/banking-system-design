@@ -1,0 +1,16 @@
+server:
+  port: 8080
+
+gateway:
+  servers: "http://localhost:8081,http://localhost:8082,http://localhost:8083"
+  virtual-nodes: 150
+  health-check:
+    interval-millis: 5000
+    timeout-millis: 2000
+  rate-limit:
+    enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.banking: DEBUG

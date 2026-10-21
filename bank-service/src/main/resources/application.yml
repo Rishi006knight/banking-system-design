@@ -1,0 +1,37 @@
+server:
+  port: ${PORT:8081}
+
+banking:
+  node-id: ${NODE_ID:1}
+  data-dir: ${DATA_DIR:./data}
+  shards:
+    count: ${SHARD_COUNT:3}
+    virtual-nodes: 150
+    # Shard database configuration (Local SQLite / Distributed SQL):
+    # url: ${TURSO_DATABASE_URL:http://localhost:8080}
+    # auth-token: ${TURSO_AUTH_TOKEN:}
+  cache:
+    session-ttl-millis: 900000      # 15 minutes
+    balance-ttl-millis: 60000       # 1 minute
+    otp-ttl-millis: 300000          # 5 minutes
+    idempotency-ttl-millis: 86400000 # 24 hours
+    max-capacity: 50000
+  rate-limit:
+    enabled: true
+    login:
+      capacity: 5
+      refill-tokens: 5
+      period-millis: 60000
+    transfer:
+      capacity: 30
+      refill-tokens: 30
+      period-millis: 60000
+    enquiry:
+      capacity: 120
+      refill-tokens: 120
+      period-millis: 60000
+
+logging:
+  level:
+    root: INFO
+    com.banking: DEBUG

@@ -1,0 +1,5 @@
+Phase,Time_Elapsed_Sec,Active_Nodes,Hash_Ring_VNodes,Throughput_RPS,Latency_p95_ms,Error_Rate_Pct,State_Description
+Normal Operation (3 Nodes),0 - 6,"3 (node-8081, node-8082, node-8083)",450,961.2,9.2,0.0%,All 3 backend nodes active; traffic distributed across 450 vnodes
+Node Crash Injected,6 - 13.5,3 -> 2 (node-8082 crashed),450 -> 300,1153.3,11.3,25.21%,Node-8082 terminated. Gateway ServerHealthChecker detected 2 failed probes in 7.49s.
+Post-Failover Re-route,13.5 - 19,"2 (node-8081, node-8083)",300,1148.0,6.1,0.0%,Hash ring remapped; all requests cleanly routed to nodes 8081 & 8083 with 0% persistent errors.
+Self-Healing Recovery,19 - 28.8,"3 (node-8081, node-8082, node-8083)",450,1232.8,7.6,0.0%,Node-8082 recovered. Re-added to ring in 9.33s with 150 virtual nodes restored; zero balance drift.

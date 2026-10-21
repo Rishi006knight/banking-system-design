@@ -1,0 +1,10 @@
+server:
+  port: 8090
+
+baseline:
+  db-path: ${BASELINE_DB:./data/baseline.db}
+
+logging:
+  level:
+    root: INFO
+    com.banking.baseline: DEBUG
