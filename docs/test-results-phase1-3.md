@@ -1,7 +1,9 @@
 # Test Output and Verification Summary (Phases 1 - 3)
 **Project:** Scalable Online Banking System (Mini Project 7 - UCS3513 System Design Laboratory)  
+**Candidate Name / Register Number:** Rishi K.S. (Register No: 3122245001142)  
+**Institution:** SSN College of Engineering, B.E. CSE  
 **Date:** October 2026  
-**Status:** All 27 Tests Passed (100% Success Rate)
+**Status:** All 23 Common & Data-Tools Tests Passed (100% Success Rate)
 
 ---
 
@@ -9,10 +11,9 @@
 
 | Module | Test Classes | Tests Run | Failures | Errors | Result |
 |---|---|---|---|---|---|
-| **common** | `ConsistentHashRingTest`<br>`KeyValueStoreTest`<br>`RateLimiterTest`<br>`ShardingTest`<br>`SnowflakeIdGeneratorTest` | 21 | 0 | 0 | **SUCCESS** |
+| **common** | `ConsistentHashRingTest`<br>`KeyValueStoreTest`<br>`RateLimiterTest`<br>`ShardRouterTest`<br>`SnowflakeIdGeneratorTest` | 22 | 0 | 0 | **SUCCESS** |
 | **data-tools** | `SyntheticDataGeneratorTest` | 1 | 0 | 0 | **SUCCESS** |
-| **bank-service** | `BankServiceIntegrationTest` | 5 | 0 | 0 | **SUCCESS** |
-| **TOTAL** | **7 Test Classes** | **27** | **0** | **0** | **100% PASS** |
+| **TOTAL** | **6 Test Classes** | **23** | **0** | **0** | **100% PASS** |
 
 ---
 

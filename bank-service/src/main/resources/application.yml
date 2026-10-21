@@ -1,5 +1,12 @@
 server:
   port: ${PORT:8081}
+  tomcat:
+    threads:
+      max: 800
+      min-spare: 30
+    accept-count: 500
+    max-connections: 10000
+    connection-timeout: 20000
 
 banking:
   node-id: ${NODE_ID:1}

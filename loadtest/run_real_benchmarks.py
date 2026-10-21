@@ -84,20 +84,25 @@ def check_shard_balance_invariant():
     total_cents = 0
     total_accs = 0
     neg_accs = 0
+    all_txns = []
     for shard in ['data/bank-shard-0.db', 'data/bank-shard-1.db', 'data/bank-shard-2.db']:
         if os.path.exists(shard):
             c = sqlite3.connect(shard)
             accs = c.execute("SELECT count(*) FROM accounts").fetchone()[0]
             bal = c.execute("SELECT coalesce(sum(balance_cents), 0) FROM accounts").fetchone()[0]
             negs = c.execute("SELECT count(*) FROM accounts WHERE balance_cents < 0").fetchone()[0]
+            txns = [r[0] for r in c.execute("SELECT transaction_id FROM transactions").fetchall()]
             c.close()
             total_accs += accs
             total_cents += bal
             neg_accs += negs
+            all_txns.extend(txns)
+    dups = len(all_txns) - len(set(all_txns))
     assert neg_accs == 0, f"Invariant violation: {neg_accs} accounts with negative balance detected!"
-    return total_accs, total_cents, neg_accs
+    assert dups == 0, f"Invariant violation: {dups} duplicate transaction IDs detected!"
+    return total_accs, total_cents, neg_accs, dups
 
-def sample_resources_during_run(pids_dict, duration_sec, out_filename):
+def sample_resources_during_run(pids_dict, duration_sec, run_id, system_name, vus, out_filename):
     rows = []
     start_t = time.time()
     prev_cpu = {}
@@ -117,14 +122,15 @@ def sample_resources_during_run(pids_dict, duration_sec, out_filename):
                 last_sec = prev_cpu.get(pid, cpu_sec)
                 cpu_pct = round(max(0.0, (cpu_sec - last_sec) / dt * 100), 1)
                 prev_cpu[pid] = cpu_sec
-                rows.append([t_offset, sname, pid, cpu_pct, mem_mb])
+                rows.append([run_id, system_name, vus, t_offset, sname, cpu_pct, mem_mb])
                 
     # Write to both results/raw/ and docs/results/raw/
+    headers = ['run_id', 'system', 'vus', 't', 'service', 'cpu_pct', 'rss_mb']
     for d in ['results/raw', 'docs/results/raw']:
         p = os.path.join(d, out_filename)
         with open(p, 'w', newline='', encoding='utf-8') as f:
             w = csv.writer(f)
-            w.writerow(['Elapsed_Sec', 'Service_Name', 'PID', 'CPU_Percent', 'Memory_MB'])
+            w.writerow(headers)
             w.writerows(rows)
 
 def main():
@@ -185,7 +191,7 @@ def main():
         # Start background resource sampler for this run
         sampler_th = threading.Thread(
             target=sample_resources_during_run,
-            args=(active_pids, 8, res_file),
+            args=(active_pids, 8, f"prop_{vus}", "Proposed", vus, res_file),
             daemon=True
         )
         sampler_th.start()
@@ -212,15 +218,14 @@ def main():
             data = json.loads(content)
             m = data.get('metrics', {})
             reqs = m.get('http_reqs', {})
-            dur = m.get('http_req_duration', {})
-            failed = m.get('http_req_failed', {})
+            dur = m.get('http_req_duration{expected_response:true}') or m.get('http_req_duration', {})
 
             rps = round(reqs.get('rate', reqs.get('values', {}).get('rate', 0.0)), 2)
             p50 = round(dur.get('med', dur.get('values', {}).get('med', 0.0)), 2)
+            if p50 == 0.0:
+                p50 = round(dur.get('avg', dur.get('values', {}).get('avg', 0.0)), 2)
             p95 = round(dur.get('p(95)', dur.get('values', {}).get('p(95)', 0.0)), 2)
             p99 = round(dur.get('p(99)', dur.get('values', {}).get('p(99)', 0.0)), 2)
-            fail_val = failed.get('value', failed.get('values', {}).get('rate', 0.0))
-            fail_rate = round(fail_val * 100, 2)
 
             total_count = reqs.get('count', 0)
             c2xx = m.get('http_2xx', {}).get('count', 0)
@@ -243,9 +248,8 @@ def main():
                 pass
 
             # Invariant check
-            post_accs, post_bal, post_negs = check_shard_balance_invariant()
-            print(f"     [PROPOSED] {vus:4d} VUs | 2xx RPS: {r2xx:7.1f} | Tot RPS: {rps:7.1f} | p50: {p50:5.1f}ms | p95: {p95:5.1f}ms | 5xx/Timeouts: {err_pct:4.2f}% | 429 RL: {rl_pct:4.2f}% | Cache: {cache_hit_pct}%")
-            assert post_negs == 0, f"Invariant violation! Found {post_negs} negative balances!"
+            post_accs, post_bal, post_negs, post_dups = check_shard_balance_invariant()
+            print(f"     [PROPOSED] {vus:4d} VUs | 2xx RPS: {r2xx:7.1f} | Tot RPS: {rps:7.1f} | p50: {p50:5.1f}ms | p95: {p95:5.1f}ms | 5xx/Timeouts: {err_pct:4.2f}% | 429 RL: {rl_pct:4.2f}% | Cache: {cache_hit_pct}% | Dups: {post_dups}")
 
             benchmark_summary_rows.append([
                 'Proposed (Sharded + Ring)',
@@ -264,7 +268,7 @@ def main():
         
         sampler_th = threading.Thread(
             target=sample_resources_during_run,
-            args=(active_pids, 8, res_file),
+            args=(active_pids, 8, f"base_{vus}", "Baseline", vus, res_file),
             daemon=True
         )
         sampler_th.start()
@@ -291,11 +295,12 @@ def main():
             data = json.loads(content)
             m = data.get('metrics', {})
             reqs = m.get('http_reqs', {})
-            dur = m.get('http_req_duration', {})
-            failed = m.get('http_req_failed', {})
+            dur = m.get('http_req_duration{expected_response:true}') or m.get('http_req_duration', {})
 
             rps = round(reqs.get('rate', reqs.get('values', {}).get('rate', 0.0)), 2)
             p50 = round(dur.get('med', dur.get('values', {}).get('med', 0.0)), 2)
+            if p50 == 0.0:
+                p50 = round(dur.get('avg', dur.get('values', {}).get('avg', 0.0)), 2)
             p95 = round(dur.get('p(95)', dur.get('values', {}).get('p(95)', 0.0)), 2)
             p99 = round(dur.get('p(99)', dur.get('values', {}).get('p(99)', 0.0)), 2)
             
@@ -321,6 +326,19 @@ def main():
     write_both('benchmark_summary.csv',
                ['System', 'Workload', 'Concurrency_VUs', 'Throughput_2xx_RPS', 'Total_RPS', 'Latency_p50_ms', 'Latency_p95_ms', 'Latency_p99_ms', 'HTTP_2xx_Count', 'HTTP_4xx_Expected', 'HTTP_429_RateLimit', 'HTTP_5xx_Error', 'HTTP_Timeouts', 'Error_Rate_5xx_Timeout_Pct', 'Rate_Limit_429_Pct', 'Cache_Hit_Pct'],
                benchmark_summary_rows)
+
+    # Combine all resource_*.csv into resource_usage.csv
+    all_res_rows = []
+    import glob
+    for rf in sorted(glob.glob("docs/results/raw/resource_*.csv")):
+        with open(rf, "r", encoding="utf-8") as f:
+            reader = csv.reader(f)
+            header = next(reader, None)
+            for row in reader:
+                if len(row) >= 7:
+                    all_res_rows.append(row)
+    if all_res_rows:
+        write_both("resource_usage.csv", ['run_id', 'system', 'vus', 't', 'service', 'cpu_pct', 'rss_mb'], all_res_rows)
 
     # 6. Check SQLITE_BUSY occurrences
     busy_cnt = count_sqlite_busy()

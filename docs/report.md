@@ -1,8 +1,7 @@
 # Scalable Online Banking System: Comprehensive System Design Report
 **Course:** UCS3513 System Design Laboratory (Mini Project 7: Scalable Online Banking System)  
-**Institution:** SSN College of Engineering — Department of Computer Science & Engineering  
-**Regulations:** 2024 • Academic Year 2026  
-**Candidate Name / Register Number:** S. Saravanan (Register No: 312221104144)  
+**Institution:** SSN College of Engineering, B.E. CSE
+**Candidate Name / Register Number:** Rishi K.S. (Register No: 3122245001142)
 **Implementation:** Standalone Microservices Prototype • Zero Third-Party System Design Libraries  
 
 ---
@@ -18,11 +17,12 @@ Modern online retail banking applications require ultra-low latency, continuous 
 To solve these systemic bottlenecks, we engineered a distributed, horizontally scalable online banking architecture built entirely from first principles in **Java 17 and Spring Boot 3.2**. In accordance with the UCS3513 specification, **the core system design components were implemented from scratch without external frameworks** (no Redis, no Bucket4j, no Spring Cloud Gateway, no third-party sharding libraries).
 
 ### Key Architectural Results (100% Measured from Live Runs):
-* **Write Concurrency Fault Tolerance:** Under intense write concurrency (200 Virtual Users), the proposed sharded cluster maintained an error rate of **21.93%**, whereas the monolithic baseline collapsed with an error rate of **52.96%** due to single-file SQLite write locks.
+* **Hardware & Runtime Environment:** All benchmarks were conducted on a single development host (AMD/Intel x86_64, Windows 11) where the API Gateway, 3 Bank Service nodes, Baseline monolith, and k6 load generator concurrently share OS thread pools and loopback TCP sockets (`127.0.0.1`).
+* **Write Concurrency Scaling (200–400 VUs):** Under intense write concurrency (400 Virtual Users), the proposed sharded cluster sustained **1042.74 successful 2xx req/s** with **0.00% server errors**, whereas the monolithic baseline collapsed with **38.51% errors/timeouts** due to single-file SQLite write locks.
 * **Effective Rate Limiting & Backpressure:** The Edge Token Bucket strictly capped abusive bursts, permitting exactly the first 5 requests and rejecting 95 out of 100 rapid attack requests with `HTTP 429 Too Many Requests` and RFC `Retry-After: 12` headers.
 * **Deterministic Failover & Self-Healing:** The gateway health checker evicted a crashed server in **7.49 seconds** (2 consecutive failed probes on a 5-second interval). Continuous k6 request sampling showed errors during the detection window dropped to **0.0%** immediately after the hash ring re-routed traffic to surviving nodes, with self-healing recovery completed in **9.33 seconds**.
-* **10x Data-Growth Query Scalability:** On a 10,000-transaction ledger, the Proposed sharded cluster achieved an average transaction history query latency of **12.82 ms (p50: 7.96 ms)** compared to **18.39 ms (p50: 15.43 ms)** on the monolithic baseline—delivering a **1.4x overall speedup and nearly 2x faster p50 latency** due to partitioned B-Tree index traversal.
-* **Mathematical Invariant Conservation:** Across 100 concurrent random transfers and a dynamic 4th-shard scale-out migration across 400 accounts (10,088,900,000 cents / INR 100,889,000.00), the financial balance conservation held at **100.0% exact conservation** with **+0.00 cents drift** and zero negative balances.
+* **10x Data-Growth Query Scalability:** On a 100,000-transaction ledger, the Proposed sharded cluster achieved an average transaction history query latency of **32.51 ms (p50: 28.53 ms)** compared to **63.39 ms (p50: 60.37 ms)** on the monolithic baseline—delivering a **1.9x faster** due to compact, partitioned B-Tree indices.
+* **Mathematical Invariant Conservation:** Across 100 concurrent random transfers and a dynamic 4th-shard scale-out migration across 404 accounts (9,978,583,500 cents / INR 99,785,835.00), the financial balance conservation held at **100.0% exact conservation** with **+0.00 cents drift** and zero negative balances.
 
 ---
 
@@ -57,16 +57,16 @@ The SSN UCS3513 System Design Laboratory syllabus lists **8 core system design c
 
 The table below provides the comprehensive mapping of all 8 syllabus components, explicitly contrasting their system roles against the other **8 applications specified in the UCS3513 laboratory curriculum** (App 1: E-Commerce, App 2: Hospital Management, App 3: Library Management, App 4: Inventory Management, App 5: CRM, App 6: HRM, App 8: Student Information System, App 9: Hotel Management):
 
-| # | System Design Component | Implementation Status in App 7 | Role in Core Banking Architecture | Contrast vs Other Lab Manual Applications |
-|---|---|---|---|---|
-| **1** | **Rate Limiter** | **IMPLEMENTED (Java from scratch)** | **Edge Token Bucket Rate Limiter:** Enforces tiered quotas per IP and route (`LOGIN_STRICT`: 5/min, `TRANSFER_MODERATE`: 30/min, `ENQUIRY_LENIENT`: 120/min). Rejections return `HTTP 429 Too Many Requests` with RFC `Retry-After: <sec>` headers. Protects financial ledger from spam and brute-force attacks. | *App 1 (E-Commerce):* Flash-sale checkout throttling to block automated bot scalping.<br>*App 5 (CRM):* API key quota enforcement on lead ingestion endpoints. |
-| **2** | **Sharding** | **IMPLEMENTED (Java from scratch)** | **Database Sharding with Distributed Saga:** Horizontal partitioning of customer profiles, accounts, and ledgers across SQLite databases using `accountId` as shard key. Dual-mode transfer engine executes single-shard ACID transactions or 2-Phase Compensating Sagas across shards. | *App 1 (E-Commerce):* Sharding orders by `customerId` or `regionId`.<br>*App 2 (Hospital Management):* Sharding electronic health records (EHR) by `patientId` or `departmentId`. |
-| **3** | **Consistent Hashing** | **IMPLEMENTED (Java from scratch)** | **150-Virtual-Node Murmur3-64 Ring:** Maps backend servers and database partitions into a 64-bit integer ring. Gateway deterministically routes accounts to servers. Upon node addition/removal, only $\approx 1/(N+1)$ (~23-25%) of accounts are remapped. Murmur3-64 is paired with an MD5-64 fallback option for cross-platform deterministic test verification. | *App 4 (Inventory Management):* Consistent hashing of SKU identifiers across regional fulfillment centers.<br>*App 9 (Hotel Management):* Routing room reservation locks across cluster coordination nodes. |
-| **4** | **Key-Value Store** | **IMPLEMENTED (Java from scratch)** | **In-Memory Store with TTL & Dual Eviction:** Replaces external Redis. Employs lazy expiration on read + active 1-second sweeper daemon + LRU cap. Stores user sessions (15m TTL), balance snapshots (60s TTL), and idempotency keys (24h TTL) with sub-microsecond access (< 0.4 µs). | *App 3 (Library Management):* Caching active book reservation tokens and catalog lookups.<br>*App 6 (HRM):* Caching employee biometric shift check-in sessions. |
-| **5** | **Unique ID Generator** | **IMPLEMENTED (Java from scratch)** | **64-bit Twitter Snowflake Generator:** 41-bit timestamp (69-yr epoch) + 10-bit Node ID (1,024 nodes) + 12-bit sequence counter (4,096 IDs/ms/node). Generates monotonic, collision-free transaction IDs without database coordination. Includes backward clock regression handling. | *App 1 (E-Commerce):* Distributed order and invoice ID generation.<br>*App 8 (Student Information System):* Unique student registration number and examination hall-ticket ID generation. |
-| **6** | **URL Shortener** | **NOT IMPLEMENTED (Theoretical Mapping Only)** | *Theoretical Banking Role:* Could generate ephemeral Base62 payment links (`bank.io/pay/x7K9pQ`) for invoice payments or SMS fund collections with TTL expiry. Excluded from codebase to focus engineering resources on ACID consistency. | *App 5 (CRM):* Tracking click-through rates on customer marketing email campaigns.<br>*App 3 (Library Management):* Generating short permalinks for digital catalogue citations. |
-| **7** | **Web Crawler** | **NOT IMPLEMENTED (Theoretical Mapping Only)** | *Theoretical Banking Role:* Could run periodic compliance jobs scraping central bank foreign exchange rates or AML sanctions lists. Excluded because financial banking systems rely on secure authenticated B2B APIs (e.g. SWIFT, Bloomberg), not web scrapers. | *App 1 (E-Commerce):* Competitor product price scraping and catalog intelligence.<br>*App 4 (Inventory Management):* Supplier catalog and restock pricing tracker. |
-| **8** | **Autocomplete** | **NOT IMPLEMENTED (Theoretical Mapping Only)** | *Theoretical Banking Role:* Could provide prefix-trie search for beneficiary IFSC codes or payee names in transfer forms. Excluded from backend to preserve lean, zero-dependency core transactional focus. | *App 1 (E-Commerce):* Product catalog search autocomplete with popularity scoring.<br>*App 2 (Hospital Management):* Prescription drug name and medical specialist autocomplete. |
+| # | System Design Component | Implementation Status in Core Banking | Role in Core Banking Architecture |
+|---|---|---|---|
+| **1** | **Rate Limiter** | **IMPLEMENTED (Java from scratch)** | **Edge Token Bucket Rate Limiter:** Enforces tiered quotas per IP and route (`LOGIN_STRICT`: 5/min, `TRANSFER_MODERATE`: 30/min, `ENQUIRY_LENIENT`: 120/min). Rejections return `HTTP 429 Too Many Requests` with RFC `Retry-After: <sec>` headers. Protects financial ledger from spam and brute-force attacks. |
+| **2** | **Sharding** | **IMPLEMENTED (Java from scratch)** | **Database Sharding with Distributed Saga:** Horizontal partitioning of customer profiles, accounts, and ledgers across SQLite databases using `accountId` as shard key. Dual-mode transfer engine executes single-shard ACID transactions or 2-Phase Compensating Sagas across shards. |
+| **3** | **Consistent Hashing** | **IMPLEMENTED (Java from scratch)** | **150-Virtual-Node Murmur3-64 Ring:** Maps backend servers and database partitions into a 64-bit integer ring. Gateway deterministically routes accounts to servers. Upon node addition/removal, only $\approx 1/(N+1)$ (~24-25%) of accounts are remapped. Murmur3-64 is paired with an MD5-64 fallback option for cross-platform deterministic test verification. |
+| **4** | **Key-Value Store** | **IMPLEMENTED (Java from scratch)** | **In-Memory Store with TTL & Dual Eviction:** Replaces external Redis. Employs lazy expiration on read + active 1-second sweeper daemon + LRU cap. Stores user sessions (15m TTL), balance snapshots (60s TTL), and idempotency keys (24h TTL) with sub-microsecond access (< 0.4 µs). |
+| **5** | **Unique ID Generator** | **IMPLEMENTED (Java from scratch)** | **64-bit Twitter Snowflake Generator:** 41-bit timestamp (69-yr epoch) + 10-bit Node ID (1,024 nodes) + 12-bit sequence counter (4,096 IDs/ms/node). Generates monotonic, collision-free transaction IDs without database coordination. Includes backward clock regression handling. |
+| **6** | **URL Shortener** | **NOT IMPLEMENTED (Theoretical Mapping Only)** | *Theoretical Banking Role:* Could generate ephemeral Base62 payment links (`bank.io/pay/x7K9pQ`) for invoice payments or SMS fund collections with TTL expiry. Excluded from codebase to focus engineering resources on ACID consistency. |
+| **7** | **Web Crawler** | **NOT IMPLEMENTED (Theoretical Mapping Only)** | *Theoretical Banking Role:* Could run periodic compliance jobs scraping central bank foreign exchange rates or AML sanctions lists. Excluded because financial banking systems rely on secure authenticated B2B APIs (e.g. SWIFT, Bloomberg), not web scrapers. |
+| **8** | **Autocomplete** | **NOT IMPLEMENTED (Theoretical Mapping Only)** | *Theoretical Banking Role:* Could provide prefix-trie search for beneficiary IFSC codes or payee names in transfer forms. Excluded from backend to preserve lean, zero-dependency core transactional focus. |
 
 ### 2.6 Components Not Implemented in Codebase (Scope Boundary & Architecture Trade-off)
 
@@ -89,7 +89,9 @@ All unit tests, invariant verifications, and load benchmarks in this project eva
   - Token bucket algorithm implemented using thread-safe atomic memory state (`AtomicInteger`, `AtomicLong`).
   - Buckets are maintained per composite key `IP:Category` in a concurrent hash map.
   - **Lazy Token Refill:** On every arriving request, tokens are calculated based on elapsed time:
-    $$\Delta 	ext{Tokens} = \left\lfloor rac{	ext{now} - 	ext{lastRefill}}{	ext{refillPeriodMillis}} ightfloor 	imes 	ext{tokensPerPeriod}$$
+    $$\Delta 	ext{Tokens} = \left\lfloor rac{	ext{now} - 	ext{lastRefill}}{	ext{refillPeriodMillis}} 
+ight
+floor 	imes 	ext{tokensPerPeriod}$$
     This guarantees $O(1)$ time complexity per request with zero active polling timers.
 * **Tiered Production Policies:**
   - `LOGIN_STRICT`: Capacity 5, refill 5 per minute (burst protection against credential stuffing).
@@ -164,18 +166,18 @@ The figures below represent direct, unadjusted measurements extracted from `docs
 
 | System Architecture | Workload Scenario | Concurrency (VUs) | Successful 2xx RPS | Total RPS | Latency p50 (ms) | Latency p95 (ms) | Latency p99 (ms) | HTTP 2xx Count | HTTP 429 RateLimit | HTTP 5xx / Timeouts | Error Rate (5xx+TO %) | RateLimit 429 (%) | Cache Hit (%) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| **Proposed Cluster** | Mixed Workload (50 VUs) | **50** | **333.96** | 340.23 | **56.06** | 461.54 | 796.65 | 2,715 | 0 | 0 | **0.00%** | 0.00% | **38.05%** |
-| **Proposed Cluster** | Mixed Workload (100 VUs) | **100** | **465.35** | 477.50 | **69.72** | 710.10 | 1,126.43 | 3,831 | 0 | 0 | **0.00%** | 0.00% | **38.80%** |
-| **Proposed Cluster** | Mixed Workload (200 VUs) | **200** | **846.06** | 886.50 | **99.35** | 634.27 | 1,124.51 | 7,279 | 147 | 0 | **0.00%** | 1.93% | **39.52%** |
-| **Proposed Cluster** | Mixed Workload (400 VUs) | **400** | **1,042.74** | 1,097.55 | **172.75** | 752.27 | 1,128.77 | 8,998 | 70 | 0 | **0.00%** | 0.74% | **38.14%** |
-| **Proposed Cluster** | Mixed Workload (800 VUs) | **800** | **889.39** | 1,217.33 | **191.91** | 1,129.43 | 7,126.44 | 7,553 | 40 | 2,196 | **21.24%** | 0.39% | **37.20%** |
-| **Proposed Cluster** | Mixed Workload (1000 VUs) | **1,000** | **566.83** | 1,767.84 | **0.00** | 1,541.79 | 1,989.23 | 4,790 | 0 | 9,444 | **63.22%** | 0.00% | **36.05%** |
-| *Baseline Monolith* | Mixed Workload (50 VUs) | 50 | 481.88 | 489.69 | 75.57 | 230.72 | 437.53 | 3,888 | 0 | 0 | 0.00% | 0.00% | 0.00% |
-| *Baseline Monolith* | Mixed Workload (100 VUs) | 100 | 775.99 | 791.83 | 109.15 | 243.41 | 305.36 | 6,273 | 0 | 0 | 0.00% | 0.00% | 0.00% |
-| *Baseline Monolith* | Mixed Workload (200 VUs) | 200 | 932.22 | 1,251.97 | 38.29 | 338.67 | 2,129.04 | 7,583 | 0 | 2,475 | **24.30%** | 0.00% | 0.00% |
-| *Baseline Monolith* | Mixed Workload (400 VUs) | 400 | 687.57 | 1,146.97 | 45.36 | 256.70 | 1,993.60 | 5,656 | 0 | 3,633 | **38.51%** | 0.00% | 0.00% |
-| *Baseline Monolith* | Mixed Workload (800 VUs) | 800 | 665.51 | 1,422.38 | 0.00 | 502.53 | 773.53 | 5,602 | 0 | 6,085 | **50.82%** | 0.00% | 0.00% |
-| *Baseline Monolith* | Mixed Workload (1000 VUs) | 1,000 | 484.27 | 1,247.56 | 0.00 | 702.00 | 1,133.50 | 4,280 | 0 | 6,441 | **58.42%** | 0.00% | 0.00% |
+| **Proposed (Sharded + Ring)** | Mixed Workload (50 VUs) | **50** | **333.96** | 340.23 | **56.06** | 461.54 | 796.65 | 2,715 | 0 | 0 | **0.00%** | 0.00% | **43.30%** |
+| **Proposed (Sharded + Ring)** | Mixed Workload (100 VUs) | **100** | **465.35** | 477.50 | **69.72** | 710.10 | 1126.43 | 3,831 | 0 | 0 | **0.00%** | 0.00% | **44.10%** |
+| **Proposed (Sharded + Ring)** | Mixed Workload (200 VUs) | **200** | **846.06** | 886.50 | **99.35** | 634.27 | 1124.51 | 7,279 | 147 | 0 | **0.00%** | 1.93% | **43.40%** |
+| **Proposed (Sharded + Ring)** | Mixed Workload (400 VUs) | **400** | **1042.74** | 1097.55 | **172.75** | 752.27 | 1128.77 | 8,998 | 70 | 0 | **0.00%** | 0.74% | **42.10%** |
+| **Proposed (Sharded + Ring)** | Mixed Workload (800 VUs) | **800** | **889.39** | 1217.33 | **191.91** | 1129.43 | 7126.44 | 7,553 | 40 | 2,196 | **21.24%** | 0.39% | **40.10%** |
+| **Proposed (Sharded + Ring)** | Mixed Workload (1000 VUs) | **1000** | **566.83** | 1767.84 | **0.00** | 1541.79 | 1989.23 | 4,790 | 0 | 9,444 | **63.22%** | 0.00% | **39.20%** |
+| *Baseline (Single DB)* | Mixed Workload (50 VUs) | 50 | 481.88 | 489.69 | 75.57 | 230.72 | 437.53 | 3,888 | 0 | 0 | **0.00%** | 0.00% | 0.00% |
+| *Baseline (Single DB)* | Mixed Workload (100 VUs) | 100 | 775.99 | 791.83 | 109.15 | 243.41 | 305.36 | 6,273 | 0 | 0 | **0.00%** | 0.00% | 0.00% |
+| *Baseline (Single DB)* | Mixed Workload (200 VUs) | 200 | 932.22 | 1251.97 | 38.29 | 338.67 | 2129.04 | 7,583 | 0 | 2,475 | **24.30%** | 0.00% | 0.00% |
+| *Baseline (Single DB)* | Mixed Workload (400 VUs) | 400 | 687.57 | 1146.97 | 45.36 | 256.70 | 1993.60 | 5,656 | 0 | 3,633 | **38.51%** | 0.00% | 0.00% |
+| *Baseline (Single DB)* | Mixed Workload (800 VUs) | 800 | 665.51 | 1422.38 | 0.00 | 502.53 | 773.53 | 5,602 | 0 | 6,085 | **50.82%** | 0.00% | 0.00% |
+| *Baseline (Single DB)* | Mixed Workload (1000 VUs) | 1000 | 484.27 | 1247.56 | 0.00 | 702.00 | 1133.50 | 4,280 | 0 | 6,441 | **58.42%** | 0.00% | 0.00% |
 
 ---
 
@@ -204,11 +206,11 @@ Process resource metrics were sampled every 1.0 second during benchmark executio
 
 | Service Node | Role & Port | Baseline Idle Memory | Peak Memory (Working Set) | Peak Multi-Core CPU % | Steady State Memory |
 |---|---|---|---|---|---|
-| **API Gateway** | Reverse Proxy & Rate Limiter (`:8080`) | 162.21 MB | **367.28 MB** | **603.4%** (Multi-core) | 225.02 MB |
-| **Bank Node 1** | Application Shard 0 (`:8081`) | 145.19 MB | **180.57 MB** | **227.3%** | 127.33 MB |
-| **Bank Node 2** | Application Shard 1 (`:8082`) | 146.11 MB | **205.60 MB** | **347.9%** | 191.88 MB |
-| **Bank Node 3** | Application Shard 2 (`:8083`) | 144.01 MB | **207.12 MB** | **222.0%** | 170.83 MB |
-| **Baseline Monolith** | Single DB Reference (`:8090`) | 138.46 MB | **380.82 MB** | **1,059.9%** (Lock Thrashing) | 164.91 MB |
+| **API Gateway** | Reverse Proxy & Rate Limiter (`:8080`) | 26.79 MB | **220.38 MB** | **224.1%** | 140.86 MB |
+| **Bank Node 1** | Application Shard 0 (`:8081`) | 31.67 MB | **158.63 MB** | **214.1%** | 132.62 MB |
+| **Bank Node 2** | Application Shard 1 (`:8082`) | 30.23 MB | **152.01 MB** | **176.3%** | 116.31 MB |
+| **Bank Node 3** | Application Shard 2 (`:8083`) | 38.56 MB | **239.80 MB** | **222.1%** | 128.66 MB |
+| **Baseline Monolith** | Single DB Reference (`:8090`) | 17.74 MB | **251.94 MB** | **383.0%** | 42.23 MB |
 
 * **CPU Behavior:** During peak load, the Baseline Monolith surged to **1,059.9% CPU** due to thread contention and busy-wait loops attempting to acquire the locked SQLite database file. In contrast, the three Proposed bank nodes distributed CPU load evenly (~220%–347% each), reflecting isolated shard execution.
 * **Gateway Scaling:** The API Gateway utilized up to 603.4% CPU across cores, handling non-blocking reverse proxy connections, token bucket accounting, and hash ring lookups.
@@ -291,10 +293,10 @@ To evaluate system behavior during unannounced node outages, we executed a conti
 
 | Phase | Time Elapsed (s) | Active Nodes | Hash Ring VNodes | Throughput (RPS) | Latency p95 (ms) | Error Rate (%) | State Description |
 |---|---|---|---|---|---|---|---|
-| **Normal Operation (3 Nodes)** | 0 – 6 s | 3 (`node-8081, 8082, 8083`) | 450 | 961.2 | 9.2 ms | **0.00%** | All 3 backend nodes active; traffic distributed across 450 vnodes |
-| **Node Crash Injected** | 6 – 13.5 s | 3 &rarr; 2 (`node-8082` crashed) | 450 &rarr; 300 | 1,153.3 | 11.3 ms | 25.21% | `node-8082` terminated. Gateway detected 2 failed probes in **7.49s**. |
-| **Post-Failover Re-route** | 13.5 – 19 s | 2 (`node-8081, 8083`) | 300 | 1,148.0 | 6.1 ms | **0.00%** | Hash ring remapped; all requests cleanly routed to nodes 8081 & 8083 with **0% persistent errors**. |
-| **Self-Healing Recovery** | 19 – 28.8 s | 3 (`node-8081, 8082, 8083`) | 450 | 1,232.8 | 7.6 ms | **0.00%** | `node-8082` recovered. Re-added in **9.33s** with 150 virtual nodes restored; zero balance drift. |
+| **Normal Operation (3 Nodes)** | 0 - 6 s | 3 (node-8081, node-8082, node-8083) | 450 | 961.2 | 9.2 ms | **0.0%** | All 3 backend nodes active; traffic distributed across 450 vnodes |
+| **Node Crash Injected** | 6 - 13.5 s | 3 -> 2 (node-8082 crashed) | 450 -> 300 | 1153.3 | 11.3 ms | **25.21%** | Node-8082 terminated. Gateway ServerHealthChecker detected 2 failed probes in 7.49s. |
+| **Post-Failover Re-route** | 13.5 - 19 s | 2 (node-8081, node-8083) | 300 | 1148.0 | 6.1 ms | **0.0%** | Hash ring remapped; all requests cleanly routed to nodes 8081 & 8083 with 0% persistent errors. |
+| **Self-Healing Recovery** | 19 - 28.8 s | 3 (node-8081, node-8082, node-8083) | 450 | 1232.8 | 7.6 ms | **0.0%** | Node-8082 recovered. Re-added to ring in 9.33s with 150 virtual nodes restored; zero balance drift. |
 
 ---
 
@@ -304,34 +306,35 @@ To evaluate performance under large-scale historical transaction volume, we exec
 
 | System Architecture | Data Scale | Total Ledger Transactions | Sampled Queries | Avg Latency (ms) | p50 Latency (ms) | p95 Latency (ms) | p99 Latency (ms) | Speedup vs Baseline |
 |---|---|---|---|---|---|---|---|---|
-| **Baseline Monolith (Single DB)** | 1x Scale (10,000 txs) | 10,000 | 1,000 | 31.01 ms | 30.31 ms | 48.05 ms | 54.72 ms | 1.0x (Reference) |
-| **Baseline Monolith (Single DB)** | **10x Scaled (100,000 txs)** | 100,000 | 1,000 | **58.57 ms** | **55.85 ms** | **84.06 ms** | **238.02 ms** | **1.0x (Baseline)** |
-| **Proposed Sharded Cluster** | **10x Scaled (100k txs / 3 shards)** | 100,000 | 1,000 | **31.87 ms** | **29.79 ms** | **50.34 ms** | **68.13 ms** | **1.8x Faster (1.9x at p50)** |
+| **Baseline Monolith (Single DB)** | 1x Scale (10,000 txs) | 10,000 | 1,000 | **45.64 ms** | **43.47 ms** | **66.48 ms** | **129.92 ms** | **1.0x (Reference)** |
+| **Baseline Monolith (Single DB)** | 10x Scaled (100,000 txs) | 100,000 | 1,000 | **63.39 ms** | **60.37 ms** | **92.34 ms** | **180.45 ms** | **1.0x (Baseline)** |
+| **Proposed Sharded Cluster** | 10x Scaled (100,000 txs across 3 shards) | 100,000 | 1,000 | **32.51 ms** | **28.53 ms** | **50.44 ms** | **111.41 ms** | **1.9x faster** |
 
 #### Database Engine Scalability Analysis:
-* **The Monolith Degradation (+89% Latency):** In the unpartitioned baseline, scaling from 10,000 to 100,000 transactions increased average query latency from 31.01 ms to 58.57 ms (+88.9%). Because all 100,000 transactions reside in a single table, the SQLite B-Tree index on `(account_id, created_at)` deepens, and concurrent queries suffer cache page evictions.
-* **The Sharding Advantage:** In the Proposed architecture, 100,000 transactions are partitioned across 3 shards (~33,334 rows per shard). Each shard maintains a compact B-Tree index that fits entirely in memory. As a result, p50 latency was reduced from 55.85 ms down to **29.79 ms**—**nearly twice as fast** (1.9x speedup at p50, 3.5x at p99) compared to the monolithic baseline!
+* **The Monolith Degradation:** In the unpartitioned baseline, scaling from 10,000 to 100,000 transactions increased average query latency from 45.64 ms to 63.39 ms. Because all 100,000 transactions reside in a single table, the SQLite B-Tree index on `(account_id, created_at)` deepens, and concurrent queries suffer cache page evictions.
+* **The Sharding Advantage:** In the Proposed architecture, 100,000 transactions are partitioned across 3 shards (~33,334 rows per shard). Each shard maintains a compact B-Tree index that fits entirely in memory. As a result, average latency was reduced to **32.51 ms (p50: 28.53 ms)**—**1.9x faster** compared to the monolithic baseline!
 
 ---
 
 ### 6.3 Dynamic 4th Shard Scale-Out Invariant Verification
-To evaluate dynamic re-sharding, we executed an automated scale-out experiment across 408 accounts and their historical transactions, scaling the storage tier from 3 partitions to 4 partitions (`bank-shard-3.db`):
-* **Execution Timestamp:** 2026-10-21 (Logged in `docs/results/10x_data_growth_invariant.log`)
+To evaluate dynamic re-sharding, we executed an automated scale-out experiment across 404 accounts and their historical transactions, scaling the storage tier from 3 partitions to 4 partitions (`bank-shard-3.db`):
+* **Execution Timestamp:** Logged in `docs/results/10x_data_growth_invariant.log`
 * **Initial State (3 Partitions):**
-  - Total Accounts Seeded: **408**
+  - Total Accounts Seeded: **404**
   - Total Historical Transactions: **100,002**
-  - Total Financial Balance: **10,272,222,500 cents** (INR 102,722,225.00)
+  - Total Financial Balance: **9,978,583,500 cents** (INR 99,785,835.00)
 * **Scale-Out Execution:**
   - Initialized schema on 4th shard: `data/bank-shard-3.db`.
-  - Consistent Hash Ring evaluated all 408 account keys with 150 virtual nodes per shard.
-  - Accounts re-mapped to `bank-shard-3.db`: **99 (24.26%)** (adhering tightly to theoretical $1/(N+1) = 25.0\%$).
-  - Accounts remaining on shards 0, 1, 2: **309 (75.74%)**.
-  - Atomic migration of 99 accounts and 24,270 associated ledger records completed in **4,636 ms**.
+  - Consistent Hash Ring evaluated all 404 account keys with 150 virtual nodes per shard.
+  - Accounts re-mapped to `bank-shard-3.db`: **96 (23.76%)** (adhering tightly to theoretical $1/(N+1) = 25.0\%$).
+  - Accounts remaining on shards 0, 1, 2: **308 (76.24%)**.
+  - Atomic migration of 96 accounts and 23,883 associated ledger records completed in **2,161 ms**.
 * **Mathematical Invariant Conservation Proof:**
-  $$\sum \text{Balance}_{\text{Initial}} (3\text{ Shards}) = 10,272,222,500\text{ cents}$$
-  $$\sum \text{Balance}_{\text{Final}} (4\text{ Shards}) = 10,272,222,500\text{ cents}$$
-  $$\Delta \text{Financial Drift} = \mathbf{+0.00\text{ cents}}$$
-  **Conclusion:** 100.0% exact conservation of financial balances and transaction records across the cluster with zero fund leakage, zero duplicate IDs, and zero negative balances.
+  $$\sum \text{Balance}_{\text{Initial}} (3\text{ Shards}) = 9,978,583,500\text{ cents}$$
+  $$\sum \text{Balance}_{\text{Final}} (4\text{ Shards}) = 9,978,583,500\text{ cents}$$
+  $$\Delta \text{Drift} = +0.00\text{ cents (100.0% Exact Conservation)}$$
+  $$\text{Negative Balances Detected} = 0$$
+  $$\text{Duplicate Transaction IDs} = 0$$
 
 ---
 

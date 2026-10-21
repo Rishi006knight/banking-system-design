@@ -1,5 +1,7 @@
 # Phase 4, 5, and 6 Test Execution and Architecture Summary
 **Project:** Scalable Online Banking System (Mini Project 7 - UCS3513 System Design Laboratory)  
+**Candidate Name / Register Number:** Rishi K.S. (Register No: 3122245001142)  
+**Institution:** SSN College of Engineering, B.E. CSE  
 **Date:** October 2026  
 **Environment:** Java 17.0.12, Spring Boot 3.2.4, Apache Maven 3.9.6, Windows PowerShell
 

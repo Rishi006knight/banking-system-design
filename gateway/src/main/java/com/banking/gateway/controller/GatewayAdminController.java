@@ -65,7 +65,7 @@ public class GatewayAdminController {
     }
 
     @org.springframework.web.bind.annotation.PostMapping("/simulate/fail")
-    public ResponseEntity<Map<String, Object>> simulateFail(@org.springframework.web.bind.annotation.RequestParam String serverId) {
+    public ResponseEntity<Map<String, Object>> simulateFail(@org.springframework.web.bind.annotation.RequestParam("serverId") String serverId) {
         Optional<ServerNode> found = router.getAllServers().stream()
                 .filter(s -> s.getServerId().equalsIgnoreCase(serverId) || s.getUrl().contains(serverId))
                 .findFirst();
@@ -82,7 +82,7 @@ public class GatewayAdminController {
     }
 
     @org.springframework.web.bind.annotation.PostMapping("/simulate/recover")
-    public ResponseEntity<Map<String, Object>> simulateRecover(@org.springframework.web.bind.annotation.RequestParam String serverId) {
+    public ResponseEntity<Map<String, Object>> simulateRecover(@org.springframework.web.bind.annotation.RequestParam("serverId") String serverId) {
         Optional<ServerNode> found = router.getAllServers().stream()
                 .filter(s -> s.getServerId().equalsIgnoreCase(serverId) || s.getUrl().contains(serverId))
                 .findFirst();
@@ -96,5 +96,20 @@ public class GatewayAdminController {
             ));
         }
         return ResponseEntity.notFound().build();
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/servers/add")
+    public ResponseEntity<Map<String, Object>> addServer(
+            @org.springframework.web.bind.annotation.RequestParam("serverId") String serverId,
+            @org.springframework.web.bind.annotation.RequestParam("url") String url) {
+        ServerNode node = new ServerNode(serverId, url);
+        router.registerServer(node);
+        return ResponseEntity.ok(Map.of(
+                "status", "REGISTERED",
+                "serverId", serverId,
+                "url", url,
+                "activeServerCount", router.getActiveServers().size(),
+                "totalVirtualNodes", router.getRing().getVirtualNodeCount()
+        ));
     }
 }

@@ -1,7 +1,7 @@
 # Architecture and Design Decisions Log
 **Course:** UCS3513 System Design Laboratory (Mini Project 7)  
-**Candidate Name / Register Number:** S. Saravanan (Register No: 312221104144)  
-**Institution:** SSN College of Engineering — Department of Computer Science & Engineering  
+**Candidate Name / Register Number:** Rishi K.S. (Register No: 3122245001142)  
+**Institution:** SSN College of Engineering, B.E. CSE  
 **Date:** October 2026
 
 ---

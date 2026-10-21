@@ -33,8 +33,9 @@ public class ReverseProxyService {
     public ReverseProxyService() {
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(Duration.ofSeconds(5))
+                .connectTimeout(Duration.ofSeconds(10))
                 .followRedirects(HttpClient.Redirect.NORMAL)
+                .executor(java.util.concurrent.Executors.newFixedThreadPool(600))
                 .build();
     }
 

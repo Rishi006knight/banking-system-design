@@ -22,13 +22,22 @@ public class AdminController {
     private final ShardRouter shardRouter;
     private final KeyValueStore<String> keyValueStore;
     private final IdGenerator idGenerator;
+    private final com.banking.service.service.TransferRecoveryJob transferRecoveryJob;
 
     public AdminController(RateLimiter rateLimiter, ShardRouter shardRouter,
-                           KeyValueStore<String> keyValueStore, IdGenerator idGenerator) {
+                           KeyValueStore<String> keyValueStore, IdGenerator idGenerator,
+                           com.banking.service.service.TransferRecoveryJob transferRecoveryJob) {
         this.rateLimiter = rateLimiter;
         this.shardRouter = shardRouter;
         this.keyValueStore = keyValueStore;
         this.idGenerator = idGenerator;
+        this.transferRecoveryJob = transferRecoveryJob;
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/recover-transfers")
+    public ResponseEntity<Map<String, Object>> recoverTransfers() {
+        int count = transferRecoveryJob.recoverPendingTransfers();
+        return ResponseEntity.ok(Map.of("recoveredTransfers", count));
     }
 
     @GetMapping("/metrics")

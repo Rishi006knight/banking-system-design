@@ -1,8 +1,8 @@
 # Comprehensive Post-Audit Resolution & System Fix Summary
 
 **Course:** UCS3513 System Design Laboratory (Mini Project 7: Scalable Online Banking System)  
-**Institution:** SSN College of Engineering — Department of Computer Science & Engineering  
-**Candidate Name / Register Number:** S. Saravanan (Register No: 312221104144)  
+**Institution:** SSN College of Engineering, B.E. CSE  
+**Candidate Name / Register Number:** Rishi K.S. (Register No: 3122245001142)  
 **Date:** October 2026  
 **Status:** Audited, Mechanically Fixed, and Verified  
 

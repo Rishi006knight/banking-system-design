@@ -1,5 +1,12 @@
 server:
   port: 8090
+  tomcat:
+    threads:
+      max: 1000
+      min-spare: 50
+    accept-count: 1000
+    max-connections: 10000
+    connection-timeout: 20000
 
 baseline:
   db-path: ${BASELINE_DB:./data/baseline.db}
