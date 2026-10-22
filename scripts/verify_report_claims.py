@@ -69,8 +69,8 @@ def main():
         ("Proposed 400 VUs: 0.00% 5xx/Timeouts", "benchmark_summary.csv", "Proposed (Sharded + Ring),Mixed Workload (400 VUs),400" in bench_csv, "400 VU Write Isolation"),
         
         # Monolithic Baseline Failures
-        ("Baseline 200 VUs: 24.30% 5xx/Timeouts", "benchmark_summary.csv", "24.3" in bench_csv, "SQLite Lock Contention Start"),
-        ("Baseline 400 VUs: 38.51% 5xx/Timeouts", "benchmark_summary.csv", "38.51" in bench_csv, "SQLite Lock Thrashing Collapse"),
+        ("Baseline 800 VUs: 48.12% 5xx/Timeouts", "benchmark_summary.csv", "48.12" in bench_csv and "48.12%" in report_content, "SQLite Lock Contention / Thread Starvation"),
+        ("Baseline 1000 VUs: 73.90% 5xx/Timeouts", "benchmark_summary.csv", "73.9" in bench_csv and "73.90%" in report_content, "SQLite Lock Thrashing Collapse"),
         
         # History Query
         ("History Query (100k txs): Proposed ~32.51 ms", "10x_history_query_benchmark.csv", "32.51" in hist_csv, "Partitioned B-Tree Traversal"),

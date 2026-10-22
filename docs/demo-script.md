@@ -10,12 +10,17 @@
 Follow these steps to demonstrate the entire system to the lab evaluator in under 5 minutes:
 
 ### Step 1: Start All System Microservices (1 Command)
-Open a PowerShell terminal in the repository root (`d:\projects\banking`) and execute:
+Open a terminal in the repository root (`d:\projects\banking`) and execute:
 
-```powershell
-.\powershell.bat -File scripts/start-all.ps1
-```
-*(On Linux/macOS: `./scripts/start-all.sh`)*
+* **Windows PowerShell:**
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File scripts/start-all.ps1
+  ```
+* **Linux / macOS / Git Bash (POSIX):**
+  ```bash
+  chmod +x scripts/*.sh
+  ./scripts/start-all.sh
+  ```
 
 This launches:
 * **API Gateway** on `http://localhost:8080`
@@ -59,17 +64,23 @@ Open your browser and navigate to:
 ### Step 3: Run the Automated Master Experiments & Generate Charts
 To run all load tests, failure scenarios, and generate charts:
 
-```powershell
-.\powershell.bat -File scripts/run-all-experiments.ps1
-```
+* **Windows PowerShell:**
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File scripts/run-all-experiments.ps1
+  ```
+* **Linux / macOS / Git Bash (POSIX):**
+  ```bash
+  ./scripts/run-all-experiments.sh
+  ```
 
 This automatically:
-1. Re-seeds fresh database shards (`scripts/init-shards.ps1`).
-2. Runs the k6 Abusive Login test (`loadtest/abusive-login.js`).
-3. Executes the Server Crash Failover experiment (`scripts/experiment-server-failure.ps1`).
-4. Executes the Server Scale-out experiment (`scripts/experiment-scaleout.ps1`).
-5. Executes the Database Shard Scale-out & Balance Invariant experiment (`scripts/experiment-reshard.ps1`).
-6. Generates all 6 visualization charts in `docs/charts/` and exports CSV metrics to `docs/results/`.
+1. Re-seeds fresh database shards (`scripts/init_all_dbs.py`).
+2. Runs the k6 Abusive Login test (`loadtest/run_abusive_test.py`).
+3. Executes the 100k Transaction History Query scalability benchmark (`loadtest/test_10x_history_query.py`).
+4. Executes the live process-kill Saga fault recovery test (`loadtest/test_real_node_kill_saga.py`).
+5. Executes the Application Server Scale-out experiment (`loadtest/test_app_scaleout.py`).
+6. Executes the Database Shard Scale-out & Balance Invariant experiment (`loadtest/test_10x_data_growth.py`).
+7. Generates all 7 visualization charts in `docs/charts/` and exports CSV metrics to `docs/results/`.
 
 ---
 
