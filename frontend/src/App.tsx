@@ -23,8 +23,24 @@ import {
   emitTelemetry,
   fetchLiveSystemMetrics
 } from './api';
+import { ComponentInspector } from './ComponentInspector';
 
 export const App: React.FC = () => {
+  // Component Architecture Inspector & Lab States
+  const [inspectorModalOpen, setInspectorModalOpen] = useState(false);
+  const [activeInspectorComp, setActiveInspectorComp] = useState<number>(1);
+  const [sidebarViewMode, setSidebarViewMode] = useState<'metrics' | 'lab'>('metrics');
+
+  const handleOpenInspector = (compNumber: number) => {
+    setActiveInspectorComp(compNumber);
+    setInspectorModalOpen(true);
+  };
+
+  const handleSelectSidebarComp = (compNumber: number) => {
+    setActiveInspectorComp(compNumber);
+    setSidebarViewMode('lab');
+  };
+
   // Auth state
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('esss_token'));
   const [user, setUser] = useState<User | null>(() => {
@@ -446,6 +462,21 @@ export const App: React.FC = () => {
               <p>Sign in to your authenticated commercial banking dashboard</p>
             </div>
 
+            {/* Architectural Security Badge */}
+            <div className="comp-architecture-badge">
+              <div className="comp-badge-left">
+                <span className="comp-pill-num">COMP 2</span>
+                <span className="comp-badge-text">Shielded by Token Bucket Rate Limiter (5 attempts/min)</span>
+              </div>
+              <button
+                type="button"
+                className="comp-badge-inspect-btn"
+                onClick={() => handleOpenInspector(2)}
+              >
+                Inspect & Test ▶
+              </button>
+            </div>
+
             <form onSubmit={handleLogin}>
               <div className="form-group">
                 <label className="form-label">Username / Customer ID</label>
@@ -526,6 +557,21 @@ export const App: React.FC = () => {
               </button>
             </div>
 
+            {/* Architectural Cache Badge */}
+            <div className="comp-architecture-badge">
+              <div className="comp-badge-left">
+                <span className="comp-pill-num">COMP 4</span>
+                <span className="comp-badge-text">L1 KV Store Caching Active (&lt;0.4ms snapshot, 60s TTL)</span>
+              </div>
+              <button
+                type="button"
+                className="comp-badge-inspect-btn"
+                onClick={() => handleOpenInspector(4)}
+              >
+                Inspect & Test ▶
+              </button>
+            </div>
+
             {/* Virtual EMV Debit Card */}
             <div className="platinum-card">
               <div className="card-top">
@@ -599,6 +645,21 @@ export const App: React.FC = () => {
             <div className="card-title-row">
               <h2>Instant Fund Transfer</h2>
               <div className="card-subtitle">Zero Fee 24x7 IMPS / NEFT</div>
+            </div>
+
+            {/* Architectural Pipeline Badge */}
+            <div className="comp-architecture-badge">
+              <div className="comp-badge-left">
+                <span className="comp-pill-num">COMP 1 + 3 + 5</span>
+                <span className="comp-badge-text">Hash Ring Routing ➔ 2-Phase Saga ➔ 64-Bit Snowflake ID</span>
+              </div>
+              <button
+                type="button"
+                className="comp-badge-inspect-btn"
+                onClick={() => handleOpenInspector(3)}
+              >
+                Inspect & Test ▶
+              </button>
             </div>
 
             {/* Quick Beneficiary Selector */}
@@ -683,6 +744,21 @@ export const App: React.FC = () => {
             <div className="card-title-row">
               <h2>Utility Bill Settlement</h2>
               <div className="card-subtitle">BBPS Integrated Payments</div>
+            </div>
+
+            {/* Architectural BBPS Shard Badge */}
+            <div className="comp-architecture-badge">
+              <div className="comp-badge-left">
+                <span className="comp-pill-num">COMP 3</span>
+                <span className="comp-badge-text">BBPS Settlement via ACID SQLite Shard</span>
+              </div>
+              <button
+                type="button"
+                className="comp-badge-inspect-btn"
+                onClick={() => handleOpenInspector(3)}
+              >
+                Inspect & Test ▶
+              </button>
             </div>
 
             <div className="bills-container">
@@ -801,6 +877,21 @@ export const App: React.FC = () => {
               <div className="card-subtitle">Real-time Core Banking Ledger</div>
             </div>
 
+            {/* Architectural Ledger Badge */}
+            <div className="comp-architecture-badge">
+              <div className="comp-badge-left">
+                <span className="comp-pill-num">COMP 3</span>
+                <span className="comp-badge-text">Immutable Double-Entry Ledger on Isolated Physical Shards</span>
+              </div>
+              <button
+                type="button"
+                className="comp-badge-inspect-btn"
+                onClick={() => handleOpenInspector(3)}
+              >
+                Inspect & Test ▶
+              </button>
+            </div>
+
             <div className="tx-table-wrapper">
               <table className="tx-table">
                 <thead>
@@ -869,130 +960,221 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          <div className="telemetry-side-stack">
-            {/* 1. Consistent Hash Ring */}
-            <div className="telemetry-component-card">
-              <div className="comp-header">
-                <span className="comp-num">COMP 1</span>
-                <span className="comp-name">Consistent Hash Ring</span>
-              </div>
-              <div className="comp-metric">
-                {systemMetrics?.activeServerCount ?? 3} / {systemMetrics?.totalServerCount ?? 3} Nodes
-              </div>
-              <div className="comp-sub">450 Virtual Ring Slots (Murmur3)</div>
-              <div className="comp-nodes-row">
-                <span className={`node-chip ${lastActiveNode.includes('8081') || lastActiveNode.includes('shard-0') ? 'active-pulse' : ''}`}>
-                  Node 1 (:8081)
-                </span>
-                <span className={`node-chip ${lastActiveNode.includes('8082') || lastActiveNode.includes('shard-1') ? 'active-pulse' : ''}`}>
-                  Node 2 (:8082)
-                </span>
-                <span className={`node-chip ${lastActiveNode.includes('8083') || lastActiveNode.includes('shard-2') ? 'active-pulse' : ''}`}>
-                  Node 3 (:8083)
-                </span>
-              </div>
-            </div>
-
-            {/* 2. Token Bucket Rate Limiter */}
-            <div className="telemetry-component-card">
-              <div className="comp-header">
-                <span className="comp-num">COMP 2</span>
-                <span className="comp-name">Token Bucket Limiter</span>
-              </div>
-              <div className="comp-metric" style={{ color: '#10b981' }}>
-                {systemMetrics?.rateLimiter?.allowedRequests ?? 35} Allowed
-              </div>
-              <div className="comp-sub">
-                {systemMetrics?.rateLimiter?.rejectedRequests ?? 0} Throttled &bull;{' '}
-                {systemMetrics?.rateLimiter?.activeBuckets ?? 3} Active Buckets
-              </div>
-              <div className="comp-sub" style={{ fontSize: '0.68rem', color: '#64748b' }}>
-                Strict: 5/m | Mod: 30/m | Len: 120/m
-              </div>
-            </div>
-
-            {/* 3. Database Sharding & Saga */}
-            <div className="telemetry-component-card">
-              <div className="comp-header">
-                <span className="comp-num">COMP 3</span>
-                <span className="comp-name">Shards & Saga</span>
-              </div>
-              <div className="comp-metric" style={{ color: '#38bdf8' }}>
-                3 Partitions
-              </div>
-              <div className="comp-sub">ACID Local & 2-Phase Saga</div>
-              <div className="comp-sub" style={{ fontSize: '0.68rem', color: '#10b981' }}>
-                Balanced across 3 SQLite nodes
-              </div>
-            </div>
-
-            {/* 4. In-Memory KV Cache */}
-            <div className="telemetry-component-card">
-              <div className="comp-header">
-                <span className="comp-num">COMP 4</span>
-                <span className="comp-name">KV Store Cache</span>
-              </div>
-              <div className="comp-metric" style={{ color: '#fbbf24' }}>
-                {(systemMetrics?.keyValueStore?.hitRatioPercent ?? 88.5).toFixed(1)}% Hit
-              </div>
-              <div className="comp-sub">
-                Latency: &lt; 0.4 ms &bull; Keys: {systemMetrics?.keyValueStore?.activeKeys ?? 28}
-              </div>
-              <div className="comp-sub" style={{ fontSize: '0.68rem', color: '#64748b' }}>
-                TTL 60s snapshots & LRU Eviction
-              </div>
-            </div>
-
-            {/* 5. Distributed Snowflake ID Generator */}
-            <div className="telemetry-component-card">
-              <div className="comp-header">
-                <span className="comp-num">COMP 5</span>
-                <span className="comp-name">Snowflake IDs</span>
-              </div>
-              <div className="comp-metric" style={{ color: '#a78bfa' }}>
-                {systemMetrics?.uniqueIdGenerator?.totalGenerated ?? 72} Generated
-              </div>
-              <div className="comp-sub">64-Bit Time-Ordered IDs</div>
-              <div className="comp-sub" style={{ fontSize: '0.68rem', color: '#64748b' }}>
-                TRF-106... collision-free
-              </div>
-            </div>
+          {/* Mode Switcher: Live Cluster vs Interactive Lab */}
+          <div className="sidebar-mode-switcher">
+            <button
+              type="button"
+              className={`sidebar-tab-btn ${sidebarViewMode === 'metrics' ? 'active' : ''}`}
+              onClick={() => setSidebarViewMode('metrics')}
+            >
+              <span>📊</span> Cluster Health & Logs
+            </button>
+            <button
+              type="button"
+              className={`sidebar-tab-btn ${sidebarViewMode === 'lab' ? 'active' : ''}`}
+              onClick={() => setSidebarViewMode('lab')}
+            >
+              <span>🔬</span> Component Simulator Lab
+            </button>
           </div>
 
-          {/* Event Stream Console on Side */}
-          <div className="telemetry-console-wrapper">
-            <div className="console-header-row">
-              <div className="console-title">
-                <span>▶</span> Live Component Reaction Log
-              </div>
-              <div style={{ color: '#64748b', fontSize: '0.7rem' }}>
-                {telemetryEvents.length} events
-              </div>
-            </div>
-
-            <div className="console-stream">
-              {telemetryEvents.length === 0 ? (
-                <div style={{ color: '#64748b', padding: '6px' }}>
-                  No events yet. Click buttons to see components react!
-                </div>
-              ) : (
-                telemetryEvents.map((evt) => (
-                  <div key={evt.id} className="log-entry">
-                    <div className="log-header-line">
-                      <span className="log-action">{evt.action}</span>
-                      <span className="log-latency">{evt.latencyMs}ms</span>
-                    </div>
-                    <div className="log-node-line">
-                      <span>[{formatTimeOnly(evt.timestamp)}]</span>
-                      <span>{evt.node}</span>
-                    </div>
-                    <div className="log-details">{evt.details}</div>
+          {sidebarViewMode === 'lab' ? (
+            /* Inline Simulator Lab inside Sidebar */
+            <ComponentInspector
+              initialComponentId={activeInspectorComp}
+              systemMetrics={systemMetrics}
+            />
+          ) : (
+            <>
+              <div className="telemetry-side-stack">
+                {/* 1. Consistent Hash Ring */}
+                <div className="telemetry-component-card">
+                  <div className="comp-header">
+                    <span className="comp-num">COMP 1</span>
+                    <span className="comp-name">Consistent Hash Ring</span>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
+                  <div className="comp-metric">
+                    {systemMetrics?.activeServerCount ?? 3} / {systemMetrics?.totalServerCount ?? 3} Nodes
+                  </div>
+                  <div className="comp-sub">450 Virtual Ring Slots (Murmur3)</div>
+                  <div className="comp-explanation-text">
+                    Routes customer accounts across 450 virtual ring slots to prevent cluster reshuffle on node failures.
+                  </div>
+                  <div className="comp-nodes-row">
+                    <span className={`node-chip ${lastActiveNode.includes('8081') || lastActiveNode.includes('shard-0') ? 'active-pulse' : ''}`}>
+                      Node 1 (:8081)
+                    </span>
+                    <span className={`node-chip ${lastActiveNode.includes('8082') || lastActiveNode.includes('shard-1') ? 'active-pulse' : ''}`}>
+                      Node 2 (:8082)
+                    </span>
+                    <span className={`node-chip ${lastActiveNode.includes('8083') || lastActiveNode.includes('shard-2') ? 'active-pulse' : ''}`}>
+                      Node 3 (:8083)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-comp-action"
+                    onClick={() => handleSelectSidebarComp(1)}
+                  >
+                    <span>⚡</span> Test / See How It Works ▶
+                  </button>
+                </div>
+
+                {/* 2. Token Bucket Rate Limiter */}
+                <div className="telemetry-component-card">
+                  <div className="comp-header">
+                    <span className="comp-num">COMP 2</span>
+                    <span className="comp-name">Token Bucket Limiter</span>
+                  </div>
+                  <div className="comp-metric" style={{ color: '#10b981' }}>
+                    {systemMetrics?.rateLimiter?.allowedRequests ?? 35} Allowed
+                  </div>
+                  <div className="comp-sub">
+                    {systemMetrics?.rateLimiter?.rejectedRequests ?? 0} Throttled &bull;{' '}
+                    {systemMetrics?.rateLimiter?.activeBuckets ?? 3} Active Buckets
+                  </div>
+                  <div className="comp-sub" style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                    Strict: 5/m | Mod: 30/m | Len: 120/m
+                  </div>
+                  <div className="comp-explanation-text">
+                    Guards auth & transfer endpoints against bot attacks & credential stuffing (5 req/min strict limit).
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-comp-action"
+                    onClick={() => handleSelectSidebarComp(2)}
+                  >
+                    <span>⚡</span> Test / See How It Works ▶
+                  </button>
+                </div>
+
+                {/* 3. Database Sharding & Saga */}
+                <div className="telemetry-component-card">
+                  <div className="comp-header">
+                    <span className="comp-num">COMP 3</span>
+                    <span className="comp-name">Shards & Saga</span>
+                  </div>
+                  <div className="comp-metric" style={{ color: '#38bdf8' }}>
+                    3 Partitions
+                  </div>
+                  <div className="comp-sub">ACID Local & 2-Phase Saga</div>
+                  <div className="comp-sub" style={{ fontSize: '0.68rem', color: '#10b981' }}>
+                    Balanced across 3 SQLite nodes
+                  </div>
+                  <div className="comp-explanation-text">
+                    Partitions SQL data into 3 SQLite nodes & coordinates 2-Phase Saga cross-shard transfers with auto-rollback.
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-comp-action"
+                    onClick={() => handleSelectSidebarComp(3)}
+                  >
+                    <span>⚡</span> Test / See How It Works ▶
+                  </button>
+                </div>
+
+                {/* 4. In-Memory KV Cache */}
+                <div className="telemetry-component-card">
+                  <div className="comp-header">
+                    <span className="comp-num">COMP 4</span>
+                    <span className="comp-name">KV Store Cache</span>
+                  </div>
+                  <div className="comp-metric" style={{ color: '#fbbf24' }}>
+                    {(systemMetrics?.keyValueStore?.hitRatioPercent ?? 88.5).toFixed(1)}% Hit
+                  </div>
+                  <div className="comp-sub">
+                    Latency: &lt; 0.4 ms &bull; Keys: {systemMetrics?.keyValueStore?.activeKeys ?? 28}
+                  </div>
+                  <div className="comp-sub" style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                    TTL 60s snapshots & LRU Eviction
+                  </div>
+                  <div className="comp-explanation-text">
+                    Caches balances in RAM with 60s TTL, delivering sub-millisecond (&lt;0.4ms) lookups & avoiding disk I/O.
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-comp-action"
+                    onClick={() => handleSelectSidebarComp(4)}
+                  >
+                    <span>⚡</span> Test / See How It Works ▶
+                  </button>
+                </div>
+
+                {/* 5. Distributed Snowflake ID Generator */}
+                <div className="telemetry-component-card">
+                  <div className="comp-header">
+                    <span className="comp-num">COMP 5</span>
+                    <span className="comp-name">Snowflake IDs</span>
+                  </div>
+                  <div className="comp-metric" style={{ color: '#a78bfa' }}>
+                    {systemMetrics?.uniqueIdGenerator?.totalGenerated ?? 72} Generated
+                  </div>
+                  <div className="comp-sub">64-Bit Time-Ordered IDs</div>
+                  <div className="comp-sub" style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                    TRF-106... collision-free
+                  </div>
+                  <div className="comp-explanation-text">
+                    Generates collision-free 64-bit time-ordered IDs at 4M/sec without central database locks.
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-comp-action"
+                    onClick={() => handleSelectSidebarComp(5)}
+                  >
+                    <span>⚡</span> Test / See How It Works ▶
+                  </button>
+                </div>
+              </div>
+
+              {/* Event Stream Console on Side */}
+              <div className="telemetry-console-wrapper">
+                <div className="console-header-row">
+                  <div className="console-title">
+                    <span>▶</span> Live Component Reaction Log
+                  </div>
+                  <div style={{ color: '#64748b', fontSize: '0.7rem' }}>
+                    {telemetryEvents.length} events
+                  </div>
+                </div>
+
+                <div className="console-stream">
+                  {telemetryEvents.length === 0 ? (
+                    <div style={{ color: '#64748b', padding: '6px' }}>
+                      No events yet. Click buttons to see components react!
+                    </div>
+                  ) : (
+                    telemetryEvents.map((evt) => (
+                      <div key={evt.id} className="log-entry">
+                        <div className="log-header-line">
+                          <span className="log-action">{evt.action}</span>
+                          <span className="log-latency">{evt.latencyMs}ms</span>
+                        </div>
+                        <div className="log-node-line">
+                          <span>[{formatTimeOnly(evt.timestamp)}]</span>
+                          <span>{evt.node}</span>
+                        </div>
+                        <div className="log-details">{evt.details}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </aside>
+      )}
+
+      {/* Component Architecture Inspector Modal */}
+      {inspectorModalOpen && (
+        <div className="inspector-modal-backdrop" onClick={() => setInspectorModalOpen(false)}>
+          <div className="inspector-modal-content" onClick={(e) => e.stopPropagation()}>
+            <ComponentInspector
+              initialComponentId={activeInspectorComp}
+              onClose={() => setInspectorModalOpen(false)}
+              systemMetrics={systemMetrics}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

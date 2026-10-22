@@ -1,32 +1,29 @@
-# React + TypeScript + Vite
+# Scalable Online Banking System — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+**UCS3513 Mini Project 7 · Experiment 7 · System Design Lab**  
+Sri Sivasubramaniya Nadar College of Engineering
 
-Currently, two official plugins are available:
+## Architecture & Technology Stack
+- **Pure Vanilla HTML5 + CSS3 + ES Modules** (Zero framework, Zero build steps).
+- **Bundle Size:** < 50 KB total payload.
+- **Google Fonts:** `Plus Jakarta Sans` (UI) and `JetBrains Mono` (Data / IDs).
+- **Dual-Panel Responsive Layout:** 65% Banking Application + 35% Live System Telemetry.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Running Standalone against API Gateway
+The frontend can be hosted statically on Vercel, Netlify, GitHub Pages, or any HTTP server.
 
-## React Compiler
+```bash
+# Set gateway URL in shell or query param:
+export GATEWAY_URL="http://localhost:8080"
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+# Start local static server:
+python -m http.server 3000
 ```
+Then visit: `http://localhost:3000/?gateway=http://localhost:8080`
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Components
+1. `index.html`: Responsive 2-panel interface, academic SSN header, dashboard tabs, admin drawer.
+2. `app.js`: Main controller, polls `/admin/metrics` every 1000ms, tracks token buckets, handles idempotent transfers.
+3. `components/ring.js`: SVG Consistent Hash Ring with 450 virtual nodes and dynamic failover migration.
+4. `components/saga.js`: 3-dot 2-Phase Saga step visualizer with live SQL/HTTP request one-liners.
+5. `components/event-log.js`: Color-coded streaming event log with up to 50 latest cluster events.

@@ -51,12 +51,28 @@ A complete, high-performance prototype of a **Scalable Online Banking System** d
 ```
 *(On Linux/macOS: `./scripts/start-all.sh`)*
 
-### 2. Open the Minimal Web UI in Browser:
-👉 **[http://localhost:8080/](http://localhost:8080/)**
-* Click **"Aarav (Shard-0 / ACC-0000001)"** &rarr; **"Authenticate via Gateway"**.
-* View live response trace badges: `Server: node-8081`, `Shard: bank-shard-0`, `Cache: HIT (<1ms)`.
-* Execute single-shard atomic transfers and cross-shard distributed Sagas.
-* Expand the **Live System Telemetry** sidebar to monitor real-time metrics and click **"Crash"** / **"Recover"** on `node-8082` to watch live dynamic hash ring failover!
+### 2. Open the Web UI in Browser:
+👉 **[http://localhost:8080/](http://localhost:8080/)** (or deployed live on Vercel: **https://frontend-eight-ashy-27.vercel.app/**)
+
+#### Running Frontend Standalone (No Node Build Step):
+The frontend is built using standard **vanilla HTML5 + CSS + ES Modules** (< 80 KB bundle) and requires zero build steps or transpilation.
+To serve it standalone on any port (e.g. port 3000, 5173, or on Vercel):
+```bash
+# Using Python built-in HTTP server:
+cd frontend
+python -m http.server 3000
+```
+Open `http://localhost:3000/?gateway=http://localhost:8080` or configure:
+```bash
+# In shell environment or .env:
+GATEWAY_URL=http://localhost:8080
+```
+The frontend automatically detects `GATEWAY_URL`, `?gateway=...` query parameter, or `localStorage.getItem('GATEWAY_URL')`. If the gateway is offline, it safely renders in cached demo mode.
+
+* Click **"Aarav Sharma (ACC-0000001)"** &rarr; **"Sign In to Account"**.
+* View live response trace badges: `→ gateway:8080 · routed → node:8082 · shard:1 · cache:HIT · 1.2ms`.
+* Execute cross-shard transfers with live 2-Phase Saga step visualizer and Idempotency suppression.
+* Use the **⚙ Admin Drawer** to test `[Kill :8082]`, `[Revive :8082]`, and `[Add 4th Shard]` with live animated hash ring migration!
 
 ### 3. Run Automated Benchmarks & Generate Charts (1 Command):
 ```powershell
