@@ -118,7 +118,7 @@ async function handleLogin(e) {
         };
 
         onLoginSuccess();
-        showToast(`Welcome back, ${currentUser.name}! Authenticated via Gateway :8080`, 'success');
+        showToast(`Welcome back, ${currentUser.name}! Secure banking session initialized.`, 'success');
     } catch (err) {
         alertBox.className = 'alert-banner alert-error';
         alertBox.textContent = err.message;
@@ -166,7 +166,7 @@ async function handleRegister(e) {
         };
 
         onLoginSuccess();
-        showToast(`Account successfully created for ${currentUser.name}! Sharded to ${data.assignedShard || 'Hash Ring'}`, 'success');
+        showToast(`Account successfully created for ${currentUser.name}! Routing via high-availability hash ring.`, 'success');
     } catch (err) {
         alertBox.className = 'alert-banner alert-error';
         alertBox.textContent = err.message;
@@ -180,15 +180,30 @@ function onLoginSuccess() {
     dash.style.display = 'block';
 
     // Populate user profile info
-    document.getElementById('dash-customer-name').textContent = currentUser.name;
-    document.getElementById('dash-customer-id').textContent = currentUser.id;
-    document.getElementById('dash-account-id').textContent = currentUser.accountId;
-    document.getElementById('dash-account-number').textContent = 'A/C: ' + currentUser.accountNumber;
-    document.getElementById('trf-source').value = currentUser.accountId;
+    const nameEl = document.getElementById('dash-customer-name');
+    if (nameEl) nameEl.textContent = currentUser.name;
+    const custIdEl = document.getElementById('dash-customer-id');
+    if (custIdEl) custIdEl.textContent = currentUser.id;
+    const accIdEl = document.getElementById('dash-account-id');
+    if (accIdEl) accIdEl.textContent = currentUser.accountId;
+    const accNumEl = document.getElementById('dash-account-number');
+    if (accNumEl) accNumEl.textContent = 'A/C: ' + currentUser.accountNumber;
+    const trfSourceEl = document.getElementById('trf-source');
+    if (trfSourceEl) trfSourceEl.value = currentUser.accountId;
+
+    // Set masked debit card number
+    const cardEl = document.getElementById('dash-card-number');
+    if (cardEl) {
+        const last4 = (currentUser.accountNumber || '0001').slice(-4);
+        cardEl.textContent = `•••• •••• •••• ${last4}`;
+    }
 
     // Set avatar initials
-    const initials = currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-    document.getElementById('user-avatar').textContent = initials;
+    const avatarEl = document.getElementById('user-avatar');
+    if (avatarEl) {
+        const initials = currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        avatarEl.textContent = initials;
+    }
 
     refreshBalance();
     loadBeneficiaries();
@@ -226,9 +241,12 @@ async function refreshBalance() {
         });
 
         // Extract System Design response trace headers
-        lastServedBy = resp.headers.get('X-Served-By') || resp.headers.get('X-Gateway-Route') || 'node-8081';
-        lastShard = resp.headers.get('X-Shard') || 'bank-shard-0';
+        const rawServer = resp.headers.get('X-Served-By') || resp.headers.get('X-Gateway-Route') || 'node-8081';
+        const rawShard = resp.headers.get('X-Shard') || 'bank-shard-0';
         const cacheHit = resp.headers.get('X-Cache-Hit') === 'true';
+
+        lastServedBy = formatClusterNodeName(rawServer);
+        lastShard = formatShardName(rawShard);
 
         const data = await resp.json();
         if (resp.ok) {
@@ -240,14 +258,16 @@ async function refreshBalance() {
 
             // Update live badges
             const badgeServer = document.getElementById('badge-served-by');
-            badgeServer.querySelector('.val').textContent = lastServedBy;
+            if (badgeServer) badgeServer.querySelector('.val').textContent = lastServedBy;
 
             const badgeShard = document.getElementById('badge-shard');
-            badgeShard.querySelector('.val').textContent = lastShard;
+            if (badgeShard) badgeShard.querySelector('.val').textContent = lastShard;
 
             const badgeCache = document.getElementById('badge-cache');
-            badgeCache.querySelector('.val').textContent = cacheHit ? 'HIT (<1ms)' : 'MISS (DB Shard)';
-            badgeCache.className = 'trace-badge badge-cache' + (cacheHit ? '' : ' miss');
+            if (badgeCache) {
+                badgeCache.querySelector('.val').textContent = cacheHit ? 'L1 Hot Cache Hit (<0.4 µs)' : 'L2 Ledger Shard Read';
+                badgeCache.className = 'trace-badge badge-cache' + (cacheHit ? '' : ' miss');
+            }
         }
     } catch (err) {
         console.error('Failed to refresh balance:', err);
@@ -539,11 +559,28 @@ async function loadNotifications() {
     }
 }
 
+function formatClusterNodeName(serverId) {
+    if (!serverId) return 'Cluster Node 1 (Primary)';
+    if (serverId.includes('8081') || serverId === 'node-8081') return 'Cluster Node 1 (Primary Zone)';
+    if (serverId.includes('8082') || serverId === 'node-8082') return 'Cluster Node 2 (Secondary Zone)';
+    if (serverId.includes('8083') || serverId === 'node-8083') return 'Cluster Node 3 (Tertiary Zone)';
+    return serverId;
+}
+
+function formatShardName(shardId) {
+    if (!shardId) return 'Partition Alpha';
+    if (shardId.includes('shard-0') || shardId.endsWith('0')) return 'Partition Alpha (Shard 0)';
+    if (shardId.includes('shard-1') || shardId.endsWith('1')) return 'Partition Beta (Shard 1)';
+    if (shardId.includes('shard-2') || shardId.endsWith('2')) return 'Partition Gamma (Shard 2)';
+    return shardId;
+}
+
 async function simulateNodeFailure(serverId) {
     try {
         const resp = await fetch(`/gateway/simulate/fail?serverId=${serverId}`, { method: 'POST' });
         const data = await resp.json();
-        showToast(`💥 Node ${serverId} CRASHED! Removed from hash ring.`, 'error');
+        const friendlyName = formatClusterNodeName(serverId);
+        showToast(`💥 ${friendlyName} OFFLINE! Ring dynamically shifted virtual partitions.`, 'error');
         refreshGatewayRoutes();
     } catch (err) {
         showToast('Failure simulation error: ' + err.message, 'error');
@@ -554,7 +591,8 @@ async function simulateNodeRecovery(serverId) {
     try {
         const resp = await fetch(`/gateway/simulate/recover?serverId=${serverId}`, { method: 'POST' });
         const data = await resp.json();
-        showToast(`✅ Node ${serverId} RECOVERED! Re-added to ring with 150 vnodes.`, 'success');
+        const friendlyName = formatClusterNodeName(serverId);
+        showToast(`✅ ${friendlyName} ONLINE! Ring dynamically reassigned 150 virtual nodes.`, 'success');
         refreshGatewayRoutes();
     } catch (err) {
         showToast('Recovery simulation error: ' + err.message, 'error');
@@ -578,10 +616,12 @@ async function refreshGatewayRoutes() {
 
             // Update node badges in failover control section
             allServers.forEach(s => {
-                const badge = document.getElementById(`node-status-${s.serverId.replace('node-', '')}`);
+                const nodeKey = s.serverId.replace('node-', '');
+                const badge = document.getElementById(`node-status-${nodeKey}`);
                 if (badge) {
                     badge.className = 'node-badge' + (s.healthy ? '' : ' dead');
-                    badge.textContent = s.healthy ? `${s.serverId} (UP)` : `${s.serverId} (DOWN)`;
+                    const friendly = nodeKey === '8081' ? 'Cluster Node 1' : nodeKey === '8082' ? 'Cluster Node 2' : 'Cluster Node 3';
+                    badge.textContent = s.healthy ? `${friendly} (UP)` : `${friendly} (DOWN)`;
                 }
             });
         }

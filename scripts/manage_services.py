@@ -123,13 +123,17 @@ def start_services(stay_alive=False):
     procs = []
     pids = []
     
+    creation_flags = 0
+    if sys.platform == "win32":
+        creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP | 0x00000008  # DETACHED_PROCESS
+
     # Start backend nodes first
     backend_svcs = SERVICES[:4]
     for svc in backend_svcs:
         print(f"Starting {svc['name']} on port {svc['port']}...")
         out_f = open(svc['stdout'], "w")
         err_f = open(svc['stderr'], "w")
-        p = subprocess.Popen(svc['cmd'], stdout=out_f, stderr=err_f)
+        p = subprocess.Popen(svc['cmd'], stdout=out_f, stderr=err_f, creationflags=creation_flags)
         procs.append(p)
         pids.append(p.pid)
         print(f"  Launched {svc['name']} (PID {p.pid})")
@@ -152,7 +156,7 @@ def start_services(stay_alive=False):
     print(f"\nStarting {gw_svc['name']} on port {gw_svc['port']}...")
     out_f = open(gw_svc['stdout'], "w")
     err_f = open(gw_svc['stderr'], "w")
-    p_gw = subprocess.Popen(gw_svc['cmd'], stdout=out_f, stderr=err_f)
+    p_gw = subprocess.Popen(gw_svc['cmd'], stdout=out_f, stderr=err_f, creationflags=creation_flags)
     procs.append(p_gw)
     pids.append(p_gw.pid)
     print(f"  Launched {gw_svc['name']} (PID {p_gw.pid})")
