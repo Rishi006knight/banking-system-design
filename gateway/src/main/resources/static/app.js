@@ -1235,37 +1235,6 @@ class ErodeBankingApp {
       });
     }
 
-    // Quick dropdown selector
-    const selRemoveBtn = document.getElementById('btn-admin-remove-selected');
-    const selAddBtn = document.getElementById('btn-admin-add-selected');
-    const selNodeDropdown = document.getElementById('admin-select-node');
-
-    if (selRemoveBtn && selNodeDropdown) {
-      selRemoveBtn.addEventListener('click', () => {
-        const port = selNodeDropdown.value;
-        if (port === '8084') {
-          if (this.hasFourthShard) this.removeFourthShard();
-          else this.showToast('Node 4 is already not in the cluster.', 'info');
-        } else {
-          if (!this.killedNodes.has(port)) this.killNode(port);
-          else this.showToast(`Node :${port} is already offline.`, 'info');
-        }
-      });
-    }
-
-    if (selAddBtn && selNodeDropdown) {
-      selAddBtn.addEventListener('click', () => {
-        const port = selNodeDropdown.value;
-        if (port === '8084') {
-          if (!this.hasFourthShard) this.addFourthShard();
-          else this.showToast('Node 4 is already online.', 'info');
-        } else {
-          if (this.killedNodes.has(port)) this.reviveNode(port);
-          else this.showToast(`Node :${port} is already online.`, 'info');
-        }
-      });
-    }
-
     const clearLogBtn = document.getElementById('btn-clear-events');
     if (clearLogBtn) clearLogBtn.addEventListener('click', () => this.eventLog?.clear());
 
