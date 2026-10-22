@@ -96,6 +96,9 @@ public class ServerHealthChecker {
     }
 
     private String extractServerId(String url) {
+        if (url.contains(":8081")) return "bank-shard-0";
+        if (url.contains(":8082")) return "bank-shard-1";
+        if (url.contains(":8083")) return "bank-shard-2";
         int lastColon = url.lastIndexOf(':');
         if (lastColon != -1) {
             return "node-" + url.substring(lastColon + 1).replaceAll("[^0-9]", "");

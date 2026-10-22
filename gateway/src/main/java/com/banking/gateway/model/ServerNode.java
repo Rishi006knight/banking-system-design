@@ -62,6 +62,6 @@ public class ServerNode {
 
     @Override
     public String toString() {
-        return serverId + " (" + url + ")";
+        return serverId;
     }
 }

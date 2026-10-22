@@ -1,0 +1,73 @@
+Run_Id,System,Concurrency_VUs,Service_Shard,SQLITE_BUSY_Count,Lock_Wait_Count,Diagnostic_Conclusion
+1,Proposed,50,bank-shard-0,0,0,Zero DB contention observed
+1,Proposed,50,bank-shard-1,0,0,Zero DB contention observed
+1,Proposed,50,bank-shard-2,0,0,Zero DB contention observed
+1,Baseline,50,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+1,Proposed,100,bank-shard-0,0,0,Zero DB contention observed
+1,Proposed,100,bank-shard-1,0,0,Zero DB contention observed
+1,Proposed,100,bank-shard-2,0,0,Zero DB contention observed
+1,Baseline,100,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+1,Proposed,200,bank-shard-0,0,0,Zero DB contention observed
+1,Proposed,200,bank-shard-1,0,0,Zero DB contention observed
+1,Proposed,200,bank-shard-2,0,0,Zero DB contention observed
+1,Baseline,200,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+1,Proposed,400,bank-shard-0,0,0,Zero DB contention observed
+1,Proposed,400,bank-shard-1,0,0,Zero DB contention observed
+1,Proposed,400,bank-shard-2,0,0,Zero DB contention observed
+1,Baseline,400,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+1,Proposed,800,bank-shard-0,0,0,Zero DB contention observed
+1,Proposed,800,bank-shard-1,0,0,Zero DB contention observed
+1,Proposed,800,bank-shard-2,0,0,Zero DB contention observed
+1,Baseline,800,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+1,Proposed,1000,bank-shard-0,0,0,Zero DB contention observed
+1,Proposed,1000,bank-shard-1,0,0,Zero DB contention observed
+1,Proposed,1000,bank-shard-2,0,0,Zero DB contention observed
+1,Baseline,1000,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+2,Proposed,50,bank-shard-0,0,0,Zero DB contention observed
+2,Proposed,50,bank-shard-1,0,0,Zero DB contention observed
+2,Proposed,50,bank-shard-2,0,0,Zero DB contention observed
+2,Baseline,50,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+2,Proposed,100,bank-shard-0,0,0,Zero DB contention observed
+2,Proposed,100,bank-shard-1,0,0,Zero DB contention observed
+2,Proposed,100,bank-shard-2,0,0,Zero DB contention observed
+2,Baseline,100,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+2,Proposed,200,bank-shard-0,0,0,Zero DB contention observed
+2,Proposed,200,bank-shard-1,0,0,Zero DB contention observed
+2,Proposed,200,bank-shard-2,0,0,Zero DB contention observed
+2,Baseline,200,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+2,Proposed,400,bank-shard-0,0,0,Zero DB contention observed
+2,Proposed,400,bank-shard-1,0,0,Zero DB contention observed
+2,Proposed,400,bank-shard-2,0,0,Zero DB contention observed
+2,Baseline,400,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+2,Proposed,800,bank-shard-0,0,0,Zero DB contention observed
+2,Proposed,800,bank-shard-1,0,0,Zero DB contention observed
+2,Proposed,800,bank-shard-2,0,0,Zero DB contention observed
+2,Baseline,800,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+2,Proposed,1000,bank-shard-0,0,0,Zero DB contention observed
+2,Proposed,1000,bank-shard-1,0,0,Zero DB contention observed
+2,Proposed,1000,bank-shard-2,0,0,Zero DB contention observed
+2,Baseline,1000,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+3,Proposed,50,bank-shard-0,0,0,Zero DB contention observed
+3,Proposed,50,bank-shard-1,0,0,Zero DB contention observed
+3,Proposed,50,bank-shard-2,0,0,Zero DB contention observed
+3,Baseline,50,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+3,Proposed,100,bank-shard-0,0,0,Zero DB contention observed
+3,Proposed,100,bank-shard-1,0,0,Zero DB contention observed
+3,Proposed,100,bank-shard-2,0,0,Zero DB contention observed
+3,Baseline,100,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+3,Proposed,200,bank-shard-0,0,0,Zero DB contention observed
+3,Proposed,200,bank-shard-1,0,0,Zero DB contention observed
+3,Proposed,200,bank-shard-2,0,0,Zero DB contention observed
+3,Baseline,200,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+3,Proposed,400,bank-shard-0,0,0,Zero DB contention observed
+3,Proposed,400,bank-shard-1,0,0,Zero DB contention observed
+3,Proposed,400,bank-shard-2,0,0,Zero DB contention observed
+3,Baseline,400,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+3,Proposed,800,bank-shard-0,0,0,Zero DB contention observed
+3,Proposed,800,bank-shard-1,0,0,Zero DB contention observed
+3,Proposed,800,bank-shard-2,0,0,Zero DB contention observed
+3,Baseline,800,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation
+3,Proposed,1000,bank-shard-0,0,0,Zero DB contention observed
+3,Proposed,1000,bank-shard-1,0,0,Zero DB contention observed
+3,Proposed,1000,bank-shard-2,0,0,Zero DB contention observed
+3,Baseline,1000,baseline-monolith,0,0,Zero DB contention; single-host loopback/k6 CPU saturation

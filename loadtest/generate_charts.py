@@ -33,7 +33,7 @@ plt.rcParams['legend.fancybox'] = False
 plt.rcParams['legend.fontsize'] = 9.0
 plt.rcParams['figure.autolayout'] = True
 
-OUTPUT_DIRS = ['results/charts', 'docs/charts', 'docs/results/charts']
+OUTPUT_DIRS = ['results/charts', 'docs/charts']
 for d in OUTPUT_DIRS:
     os.makedirs(d, exist_ok=True)
 
@@ -50,7 +50,9 @@ def load_benchmark_summary():
         csv_path = 'docs/results/benchmark_summary.csv'
 
     prop_vus, prop_p50, prop_p95, prop_p99, prop_rps, prop_err = [], [], [], [], [], []
+    prop_p50_sd, prop_p95_sd, prop_rps_sd, prop_err_sd = [], [], [], []
     base_vus, base_p50, base_p95, base_p99, base_rps, base_err = [], [], [], [], [], []
+    base_p50_sd, base_p95_sd, base_rps_sd, base_err_sd = [], [], [], []
 
     if os.path.exists(csv_path):
         with open(csv_path, 'r', encoding='utf-8') as f:
@@ -60,34 +62,46 @@ def load_benchmark_summary():
                 try:
                     vus = int(row['Concurrency_VUs'])
                     rps = float(row.get('Throughput_2xx_RPS') or row.get('Throughput_RPS') or 0.0)
+                    rps_sd = float(row.get('Throughput_2xx_SD', 0.0) or 0.0)
                     p50 = float(row['Latency_p50_ms'])
+                    p50_sd = float(row.get('Latency_p50_SD', 0.0) or 0.0)
                     p95 = float(row['Latency_p95_ms'])
+                    p95_sd = float(row.get('Latency_p95_SD', 0.0) or 0.0)
                     p99 = float(row.get('Latency_p99_ms', 0.0) or 0.0)
                     err = float(row.get('Error_Rate_5xx_Timeout_Pct') or row.get('Error_Rate_Pct') or 0.0)
+                    err_sd = float(row.get('Error_Rate_SD', 0.0) or 0.0)
 
                     if 'Proposed' in sys_name:
                         prop_vus.append(vus)
                         prop_rps.append(rps)
+                        prop_rps_sd.append(rps_sd)
                         prop_p50.append(p50)
+                        prop_p50_sd.append(p50_sd)
                         prop_p95.append(p95)
+                        prop_p95_sd.append(p95_sd)
                         prop_p99.append(p99)
                         prop_err.append(err)
+                        prop_err_sd.append(err_sd)
                     elif 'Baseline' in sys_name:
                         base_vus.append(vus)
                         base_rps.append(rps)
+                        base_rps_sd.append(rps_sd)
                         base_p50.append(p50)
+                        base_p50_sd.append(p50_sd)
                         base_p95.append(p95)
+                        base_p95_sd.append(p95_sd)
                         base_p99.append(p99)
                         base_err.append(err)
+                        base_err_sd.append(err_sd)
                 except Exception:
                     continue
 
-    return (prop_vus, prop_p50, prop_p95, prop_p99, prop_rps, prop_err,
-            base_vus, base_p50, base_p95, base_p99, base_rps, base_err)
+    return (prop_vus, prop_p50, prop_p50_sd, prop_p95, prop_p95_sd, prop_p99, prop_rps, prop_rps_sd, prop_err, prop_err_sd,
+            base_vus, base_p50, base_p50_sd, base_p95, base_p95_sd, base_p99, base_rps, base_rps_sd, base_err, base_err_sd)
 
 def plot_latency_vs_vus():
-    (prop_vus, prop_p50, prop_p95, prop_p99, prop_rps, prop_err,
-     base_vus, base_p50, base_p95, base_p99, base_rps, base_err) = load_benchmark_summary()
+    (prop_vus, prop_p50, prop_p50_sd, prop_p95, prop_p95_sd, prop_p99, prop_rps, prop_rps_sd, prop_err, prop_err_sd,
+     base_vus, base_p50, base_p50_sd, base_p95, base_p95_sd, base_p99, base_rps, base_rps_sd, base_err, base_err_sd) = load_benchmark_summary()
 
     fig, ax = plt.subplots(figsize=(8.0, 4.8))
 
@@ -96,10 +110,10 @@ def plot_latency_vs_vus():
     b_p50 = [max(v, 0.8) for v in base_p50]
     b_p95 = [max(v, 0.8) for v in base_p95]
 
-    ax.plot(prop_vus, p_p50, 'o-', color='#1f77b4', linewidth=1.8, markersize=5, label='Proposed (p50)')
-    ax.plot(prop_vus, p_p95, 's--', color='#1f77b4', linewidth=1.5, markersize=5, label='Proposed (p95)')
-    ax.plot(base_vus, b_p50, 'o-', color='#d62728', linewidth=1.8, markersize=5, label='Baseline (p50)')
-    ax.plot(base_vus, b_p95, 's--', color='#d62728', linewidth=1.5, markersize=5, label='Baseline (p95)')
+    ax.errorbar(prop_vus, p_p50, yerr=prop_p50_sd, fmt='o-', color='#1f77b4', linewidth=1.8, markersize=5, capsize=3, label='Proposed (p50 ± sd)')
+    ax.errorbar(prop_vus, p_p95, yerr=prop_p95_sd, fmt='s--', color='#1f77b4', linewidth=1.5, markersize=5, capsize=3, label='Proposed (p95 ± sd)')
+    ax.errorbar(base_vus, b_p50, yerr=base_p50_sd, fmt='o-', color='#d62728', linewidth=1.8, markersize=5, capsize=3, label='Baseline (p50 ± sd)')
+    ax.errorbar(base_vus, b_p95, yerr=base_p95_sd, fmt='s--', color='#d62728', linewidth=1.5, markersize=5, capsize=3, label='Baseline (p95 ± sd)')
 
     ax.set_title('Latency vs Concurrency (Successful 2xx Requests)', fontsize=11, fontweight='bold', pad=10)
     ax.set_xlabel('Concurrent Virtual Users (VUs)', fontsize=10)
@@ -114,17 +128,17 @@ def plot_latency_vs_vus():
     save_plot('latency_vs_vus.png')
 
 def plot_throughput_vs_vus():
-    (prop_vus, prop_p50, prop_p95, prop_p99, prop_rps, prop_err,
-     base_vus, base_p50, base_p95, base_p99, base_rps, base_err) = load_benchmark_summary()
+    (prop_vus, prop_p50, prop_p50_sd, prop_p95, prop_p95_sd, prop_p99, prop_rps, prop_rps_sd, prop_err, prop_err_sd,
+     base_vus, base_p50, base_p50_sd, base_p95, base_p95_sd, base_p99, base_rps, base_rps_sd, base_err, base_err_sd) = load_benchmark_summary()
 
     x = np.arange(len(prop_vus))
     width = 0.35
 
     fig, ax = plt.subplots(figsize=(8.0, 4.8))
-    rects1 = ax.bar(x - width/2, prop_rps, width, label='Proposed System', color='#1f77b4', edgecolor='#000000', linewidth=0.6)
-    rects2 = ax.bar(x + width/2, base_rps, width, label='Baseline System', color='#aec7e8', edgecolor='#000000', linewidth=0.6)
+    rects1 = ax.bar(x - width/2, prop_rps, width, yerr=prop_rps_sd, capsize=3, label='Proposed System (Mean ± SD)', color='#1f77b4', edgecolor='#000000', linewidth=0.6)
+    rects2 = ax.bar(x + width/2, base_rps, width, yerr=base_rps_sd, capsize=3, label='Baseline System (Mean ± SD)', color='#aec7e8', edgecolor='#000000', linewidth=0.6)
 
-    ax.set_title('Throughput vs Concurrency', fontsize=11, fontweight='bold', pad=10)
+    ax.set_title('Throughput vs Concurrency (Error Bars = ±1 SD)', fontsize=11, fontweight='bold', pad=10)
     ax.set_xlabel('Concurrent Virtual Users (VUs)', fontsize=10)
     ax.set_ylabel('Throughput (req/s)', fontsize=10)
     ax.set_xticks(x)
@@ -144,18 +158,18 @@ def plot_throughput_vs_vus():
                         xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', fontsize=8.0)
 
     max_val = max(prop_rps + base_rps) if (prop_rps + base_rps) else 500
-    ax.set_ylim(0, max_val * 1.15)
+    ax.set_ylim(0, max_val * 1.25)
     save_plot('throughput_vs_vus.png')
 
 def plot_error_rate_vs_vus():
-    (prop_vus, prop_p50, prop_p95, prop_p99, prop_rps, prop_err,
-     base_vus, base_p50, base_p95, base_p99, base_rps, base_err) = load_benchmark_summary()
+    (prop_vus, prop_p50, prop_p50_sd, prop_p95, prop_p95_sd, prop_p99, prop_rps, prop_rps_sd, prop_err, prop_err_sd,
+     base_vus, base_p50, base_p50_sd, base_p95, base_p95_sd, base_p99, base_rps, base_rps_sd, base_err, base_err_sd) = load_benchmark_summary()
 
     fig, ax = plt.subplots(figsize=(8.0, 4.5))
-    ax.plot(prop_vus, prop_err, 'o-', color='#1f77b4', linewidth=1.8, markersize=5, label='Proposed System')
-    ax.plot(base_vus, base_err, 's-', color='#d62728', linewidth=1.8, markersize=5, label='Baseline System')
+    ax.errorbar(prop_vus, prop_err, yerr=prop_err_sd, fmt='o-', color='#1f77b4', linewidth=1.8, markersize=5, capsize=3, label='Proposed System (Mean ± SD)')
+    ax.errorbar(base_vus, base_err, yerr=base_err_sd, fmt='s-', color='#d62728', linewidth=1.8, markersize=5, capsize=3, label='Baseline System (Mean ± SD)')
 
-    ax.set_title('Error Rate vs Concurrency (5xx + Timeouts)', fontsize=11, fontweight='bold', pad=10)
+    ax.set_title('Error Rate vs Concurrency (5xx + Timeouts, Error Bars = ±1 SD)', fontsize=11, fontweight='bold', pad=10)
     ax.set_xlabel('Concurrent Virtual Users (VUs)', fontsize=10)
     ax.set_ylabel('Error Rate (%)', fontsize=10)
     ax.set_xticks(prop_vus)

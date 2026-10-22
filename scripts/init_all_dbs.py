@@ -29,7 +29,7 @@ def init_databases():
     cmd = (
         'mvn compile exec:java -pl data-tools '
         '-Dexec.mainClass=com.banking.datatools.DataGeneratorCli '
-        '"-Dexec.args=--shards 3 --data-dir ./data --customers 400 --accounts 400 --transactions 4000"'
+        '"-Dexec.args=--shards 3 --data-dir ./data --customers 416 --accounts 416 --transactions 4000"'
     )
     print(f"\nSeeding 3 shards with SyntheticDataGenerator...")
     subprocess.check_call(cmd, shell=True)
@@ -62,7 +62,12 @@ def init_databases():
     conn_b.commit()
     conn_b.close()
     
-    # 4. Verify integrity
+    # 4. Rebalance shards to match Gateway Consistent Hash Ring
+    print("\nRebalancing shards to match Gateway Consistent Hash Ring...")
+    rebalance_cmd = 'mvn compile exec:java -pl data-tools "-Dexec.mainClass=com.banking.datatools.RebalanceToRing"'
+    subprocess.check_call(rebalance_cmd, shell=True)
+
+    # 5. Verify integrity
     total_shard_bal = 0
     total_shard_accs = 0
     for shard in ['data/bank-shard-0.db', 'data/bank-shard-1.db', 'data/bank-shard-2.db']:
@@ -83,7 +88,7 @@ def init_databases():
     print(f"  Baseline DB:    Accounts = {base_accs}, Total Balance = {base_bal} cents")
     assert total_shard_accs == base_accs, f"Account mismatch: {total_shard_accs} vs {base_accs}"
     assert total_shard_bal == base_bal, f"Balance mismatch: {total_shard_bal} vs {base_bal}"
-    print("  [SUCCESS] Shards and Baseline DB 100% synchronized!\n")
+    print("  [SUCCESS] Shards and Baseline DB 100% synchronized and aligned to ring!\n")
 
 if __name__ == "__main__":
     init_databases()
