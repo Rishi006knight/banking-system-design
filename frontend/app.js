@@ -6,6 +6,37 @@ import { KvStoreVisualizer } from './components/kv-store.js';
 import { SnowflakeVisualizer } from './components/snowflake.js';
 import { EventLogStream } from './components/event-log.js';
 
+export const BANK_CUSTOMERS_DIRECTORY = [
+  { accountId: 'ACC-0000001', name: 'Aarav Sharma', shardId: 0, port: '8081', branch: 'Erode Main', ifsc: 'ESSS0001001', category: 'Platinum Savings' },
+  { accountId: 'ACC-0000002', name: 'Diya Patel', shardId: 1, port: '8082', branch: 'Coimbatore RS Puram', ifsc: 'ESSS0001002', category: 'Gold Savings' },
+  { accountId: 'ACC-0000003', name: 'Rohan Verma', shardId: 0, port: '8081', branch: 'Chennai Anna Nagar', ifsc: 'ESSS0001003', category: 'Corporate Salary' },
+  { accountId: 'ACC-0000004', name: 'Kavya Nair', shardId: 2, port: '8083', branch: 'Salem Fairlands', ifsc: 'ESSS0001004', category: 'Platinum Savings' },
+  { accountId: 'ACC-0000005', name: 'Saravana Rishi', shardId: 0, port: '8081', branch: 'Erode Perundurai', ifsc: 'ESSS0001005', category: 'Executive Current' },
+  { accountId: 'ACC-0000006', name: 'Meera Krishnan', shardId: 3, port: '8084', branch: 'Bangalore Indiranagar', ifsc: 'ESSS0001006', category: 'NRI Prime' },
+  { accountId: 'ACC-0000007', name: 'Aditya Kulkarni', shardId: 1, port: '8082', branch: 'Mumbai Bandra', ifsc: 'ESSS0001007', category: 'Regular Savings' },
+  { accountId: 'ACC-0000008', name: 'Ananya Iyer', shardId: 2, port: '8083', branch: 'Madurai Simmakkal', ifsc: 'ESSS0001008', category: 'Platinum Savings' },
+  { accountId: 'ACC-0000009', name: 'Vikram Singhania', shardId: 0, port: '8081', branch: 'Kolkata Park Street', ifsc: 'ESSS0001009', category: 'Wealth Privilege' },
+  { accountId: 'ACC-0000010', name: 'Pooja Hegde', shardId: 1, port: '8082', branch: 'Mangalore Hampankatta', ifsc: 'ESSS0001010', category: 'Retail Savings' },
+  { accountId: 'ACC-0000011', name: 'Karthik Subramaniam', shardId: 2, port: '8083', branch: 'Tiruchirappalli Cantt', ifsc: 'ESSS0001011', category: 'Corporate Salary' },
+  { accountId: 'ACC-0000012', name: 'Sneha Reddy', shardId: 3, port: '8084', branch: 'Hyderabad Hitec City', ifsc: 'ESSS0001012', category: 'Gold Savings' },
+  { accountId: 'ACC-0000013', name: 'Rajeshwari Sundaram', shardId: 0, port: '8081', branch: 'Tirunelveli Junction', ifsc: 'ESSS0001013', category: 'Senior Citizen Prime' },
+  { accountId: 'ACC-0000014', name: 'Nikhil Bansal', shardId: 1, port: '8082', branch: 'Delhi Connaught Place', ifsc: 'ESSS0001014', category: 'Platinum Savings' },
+  { accountId: 'ACC-0000015', name: 'Swati Deshmukh', shardId: 2, port: '8083', branch: 'Pune Kothrud', ifsc: 'ESSS0001015', category: 'Retail Savings' },
+  { accountId: 'ACC-0000016', name: 'Arjun Balakrishnan', shardId: 3, port: '8084', branch: 'Kochi Marine Drive', ifsc: 'ESSS0001016', category: 'Executive Current' },
+  { accountId: 'ACC-0000017', name: 'Priya Nambiar', shardId: 0, port: '8081', branch: 'Calicut Palayam', ifsc: 'ESSS0001017', category: 'Regular Savings' },
+  { accountId: 'ACC-0000018', name: 'Harish Madhavan', shardId: 1, port: '8082', branch: 'Vellore Fort Area', ifsc: 'ESSS0001018', category: 'Gold Savings' },
+  { accountId: 'ACC-0000019', name: 'Divya Venkataraman', shardId: 2, port: '8083', branch: 'Thanjavur Old Bus Stand', ifsc: 'ESSS0001019', category: 'Platinum Savings' },
+  { accountId: 'ACC-0000020', name: 'Manoj Chandrasekaran', shardId: 3, port: '8084', branch: 'Hosur Sipcot', ifsc: 'ESSS0001020', category: 'Corporate Salary' },
+  { accountId: 'ACC-0000021', name: 'Ritu Sengupta', shardId: 0, port: '8081', branch: 'Bhubaneswar Saheed Nagar', ifsc: 'ESSS0001021', category: 'Retail Savings' },
+  { accountId: 'ACC-0000022', name: 'Siddharth Menon', shardId: 1, port: '8082', branch: 'Thrissur Round', ifsc: 'ESSS0001022', category: 'Wealth Privilege' },
+  { accountId: 'ACC-0000023', name: 'Tanvi Joshi', shardId: 2, port: '8083', branch: 'Ahmedabad Navrangpura', ifsc: 'ESSS0001023', category: 'Gold Savings' },
+  { accountId: 'ACC-0000024', name: 'Ashwin Ramachandran', shardId: 3, port: '8084', branch: 'Mysore Saraswathipuram', ifsc: 'ESSS0001024', category: 'Executive Current' },
+  { accountId: 'ACC-0000025', name: 'Lavanya Narayanan', shardId: 0, port: '8081', branch: 'Kanchipuram Gandhi Road', ifsc: 'ESSS0001025', category: 'Platinum Savings' },
+  { accountId: 'ACC-0000026', name: 'Gaurav Chatterjee', shardId: 1, port: '8082', branch: 'Guwahati Pan Bazar', ifsc: 'ESSS0001026', category: 'Regular Savings' },
+  { accountId: 'ACC-0000027', name: 'Shalini Pillai', shardId: 2, port: '8083', branch: 'Trivandrum Kowdiar', ifsc: 'ESSS0001027', category: 'Senior Citizen Prime' },
+  { accountId: 'ACC-0000028', name: 'Pranav Srinivasan', shardId: 3, port: '8084', branch: 'Dindigul Bus Stand', ifsc: 'ESSS0001028', category: 'Corporate Salary' }
+];
+
 class ErodeBankingApp {
   constructor() {
     this.token = localStorage.getItem('esss_token');
@@ -161,6 +192,8 @@ class ErodeBankingApp {
 
   getShardForAccount(accountId) {
     if (!accountId) return '0';
+    const found = BANK_CUSTOMERS_DIRECTORY.find(c => c.accountId === accountId);
+    if (found) return String(found.shardId);
     if (accountId.includes('2')) return '1';
     if (accountId.includes('4')) return '2';
     if (accountId.includes('6')) return '3';
@@ -371,7 +404,7 @@ class ErodeBankingApp {
       localStorage.setItem(`esss_txs_${accId}`, JSON.stringify(this.transactions));
     }
 
-    // 3. Bills
+    // 3. Bills (Variable number of bills per account, up to 5 bills max)
     const savedBills = localStorage.getItem(`esss_bills_${accId}`);
     if (savedBills) {
       try {
@@ -380,14 +413,75 @@ class ErodeBankingApp {
         this.bills = [];
       }
     } else {
-      this.bills = [
-        { id: 'BILL-EL-89', name: 'TNEB Electricity Bill', amount: 840, due: 'Due in 3 days', paid: false },
-        { id: 'BILL-BB-41', name: 'Airtel Broadband Service', amount: 1199, due: 'Due in 7 days', paid: false },
-        { id: 'BILL-WT-12', name: 'Erode Municipal Water Tax', amount: 320, due: 'Paid on Oct 20', paid: true },
-        { id: 'BILL-GAS-55', name: 'Indane Gas Cylinder', amount: 950, due: 'Due in 12 days', paid: false }
-      ];
+      this.bills = this.generateBillsForAccount(accId);
       localStorage.setItem(`esss_bills_${accId}`, JSON.stringify(this.bills));
     }
+  }
+
+  generateBillsForAccount(accId) {
+    const catalog = [
+      { id: 'BILL-EL-89', name: 'TNEB Electricity Bill', amount: 840, due: 'Due in 3 days', paid: false },
+      { id: 'BILL-BB-41', name: 'Airtel Broadband Service', amount: 1199, due: 'Due in 7 days', paid: false },
+      { id: 'BILL-WT-12', name: 'Erode Municipal Water Tax', amount: 320, due: 'Paid on Oct 20', paid: true },
+      { id: 'BILL-GAS-55', name: 'Indane Gas Cylinder', amount: 950, due: 'Due in 12 days', paid: false },
+      { id: 'BILL-CC-09', name: 'HDFC Regalia Credit Card', amount: 4850, due: 'Due in 5 days', paid: false },
+      { id: 'BILL-INS-77', name: 'LIC Life Insurance Premium', amount: 2400, due: 'Due in 15 days', paid: false },
+      { id: 'BILL-DTH-23', name: 'Tata Play DTH Re-charge', amount: 499, due: 'Paid yesterday', paid: true },
+      { id: 'BILL-MUN-91', name: 'Property Tax Settlement', amount: 1850, due: 'Due in 9 days', paid: false }
+    ];
+
+    const num = parseInt((accId || '').replace(/\D/g, '') || '1', 10);
+    // Variable bills count: between 3 and 5 (max 5 bills)
+    const count = Math.min(5, 3 + (num % 3));
+    const offset = (num * 2) % catalog.length;
+    const bills = [];
+    for (let i = 0; i < count; i++) {
+      const b = catalog[(offset + i) % catalog.length];
+      bills.push({ ...b, id: `${b.id}-${accId.slice(-3)}` });
+    }
+    return bills;
+  }
+
+  handleDeposit(amount, method = 'UPI', remarks = '') {
+    if (!this.user) return;
+    const numAmt = parseFloat(amount);
+    if (isNaN(numAmt) || numAmt <= 0) {
+      this.showToast('Please enter a valid deposit amount', 'warn');
+      return;
+    }
+
+    this.currentBalance = Math.round((this.currentBalance + numAmt) * 100) / 100;
+    localStorage.setItem(`esss_balance_${this.user.accountId}`, this.currentBalance.toFixed(2));
+    this.updateBalanceUI();
+
+    const sfId = this.snowflake ? this.snowflake.generateId('DEP') : `DEP-${Date.now()}`;
+    const shardId = parseInt(this.getShardForAccount(this.user.accountId), 10);
+    const cleanRemarks = (remarks || '').trim();
+    const desc = `Deposit via ${method}${cleanRemarks ? ' · ' + cleanRemarks : ''}`;
+
+    this.addTransaction({
+      transactionId: sfId,
+      description: desc,
+      type: 'CREDIT',
+      amountInr: numAmt,
+      balanceAfterInr: this.currentBalance,
+      shardId: shardId,
+      createdAt: Date.now()
+    });
+
+    if (this.eventLog) {
+      this.eventLog.addEvent({
+        action: 'DEPOSIT_COMPLETED',
+        details: `CREDIT_SETTLED · +₹${numAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })} via ${method} · Snowflake=${sfId} · New Bal: ₹${this.currentBalance.toFixed(2)}`
+      });
+    }
+
+    this.showToast(`Deposited ₹${numAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })} successfully via ${method}!`, 'success');
+
+    const modal = document.getElementById('modal-deposit');
+    if (modal) modal.classList.remove('open');
+    const form = document.getElementById('deposit-form');
+    if (form) form.reset();
   }
 
   updateBalanceUI() {
@@ -466,6 +560,8 @@ class ErodeBankingApp {
     const toAcc = document.getElementById('transfer-dest-acc').value;
     const amount = parseFloat(document.getElementById('transfer-amount').value);
     const idemKey = document.getElementById('transfer-idem-key').value.trim() || this.generateNewIdempotencyKey();
+    const remarks = document.getElementById('transfer-remarks')?.value.trim();
+    const transferDesc = remarks ? `Transfer to ${toAcc} (${remarks})` : `Transfer to ${toAcc}`;
 
     if (!toAcc || isNaN(amount) || amount <= 0) {
       this.showToast('Please specify a valid transfer amount', 'warn');
@@ -576,7 +672,7 @@ class ErodeBankingApp {
         sourceAccountId: this.user.accountId,
         destAccountId: toAcc,
         amountCents: Math.round(amount * 100),
-        description: `Fund transfer to ${toAcc}`
+        description: transferDesc
       }, {
         headers: { 'Idempotency-Key': idemKey }
       });
@@ -591,13 +687,16 @@ class ErodeBankingApp {
 
         this.addTransaction({
           transactionId: sfId,
-          description: `Transfer to ${toAcc}`,
+          description: transferDesc,
           type: 'DEBIT',
           amountInr: amount,
           balanceAfterInr: this.currentBalance,
           shardId: srcShard,
           createdAt: Date.now()
         });
+
+        const remInput = document.getElementById('transfer-remarks');
+        if (remInput) remInput.value = '';
       }
 
       if (this.eventLog) {
@@ -638,13 +737,16 @@ class ErodeBankingApp {
 
         this.addTransaction({
           transactionId: sfId,
-          description: `Transfer to ${toAcc}`,
+          description: transferDesc,
           type: 'DEBIT',
           amountInr: amount,
           balanceAfterInr: this.currentBalance,
           shardId: srcShard,
           createdAt: Date.now()
         });
+
+        const remInput = document.getElementById('transfer-remarks');
+        if (remInput) remInput.value = '';
       }
 
       if (this.eventLog) {
@@ -737,20 +839,119 @@ class ErodeBankingApp {
   }
 
   getBeneficiariesList() {
-    const base = [
-      { name: 'Diya Patel', acc: 'ACC-0000002', shard: 'Shard 1 (:8082)', port: '8082' },
-      { name: 'Kavya Nair', acc: 'ACC-0000004', shard: 'Shard 2 (:8083)', port: '8083' },
-      { name: 'Saravana Rishi', acc: 'ACC-0000005', shard: 'Shard 0 (:8081)', port: '8081' }
-    ];
-    if (this.hasFourthShard) {
-      base.push({ name: 'Meera Krishnan', acc: 'ACC-0000006', shard: 'Shard 3 (:8084)', port: '8084' });
+    if (!this.user) return [];
+    const accId = this.user.accountId;
+    const saved = localStorage.getItem(`esss_beneficiaries_${accId}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch {
+        // Fall back to defaults
+      }
     }
-    return base;
+
+    const defaults = BANK_CUSTOMERS_DIRECTORY
+      .filter(c => c.accountId !== accId && ['ACC-0000002', 'ACC-0000004', 'ACC-0000005', 'ACC-0000006'].includes(c.accountId))
+      .slice(0, 3)
+      .map(c => ({
+        name: c.name,
+        acc: c.accountId,
+        shard: `Shard ${c.shardId} (:808${c.shardId + 1})`,
+        port: `808${c.shardId + 1}`
+      }));
+
+    if (this.hasFourthShard) {
+      const node4Cust = BANK_CUSTOMERS_DIRECTORY.find(c => c.shardId === 3 && c.accountId !== accId);
+      if (node4Cust && !defaults.some(d => d.acc === node4Cust.accountId)) {
+        defaults.push({
+          name: node4Cust.name,
+          acc: node4Cust.accountId,
+          shard: `Shard 3 (:8084)`,
+          port: '8084'
+        });
+      }
+    }
+
+    localStorage.setItem(`esss_beneficiaries_${accId}`, JSON.stringify(defaults));
+    return defaults;
   }
 
   updateBeneficiariesList() {
     this.loadBeneficiaries();
     this.populateTransferSelect();
+    this.populateDirectoryDropdown();
+  }
+
+  populateDirectoryDropdown() {
+    const select = document.getElementById('beneficiary-select-directory');
+    if (!select || !this.user) return;
+
+    const existingAccs = new Set(this.getBeneficiariesList().map(b => b.acc));
+    existingAccs.add(this.user.accountId);
+
+    const available = BANK_CUSTOMERS_DIRECTORY.filter(c => !existingAccs.has(c.accountId));
+    select.innerHTML = '<option value="">-- Choose from Directory --</option>' +
+      available.map(c => `
+        <option value="${c.accountId}" data-name="${c.name}" data-shard="${c.shardId}">
+          ${c.name} (${c.accountId} · Shard ${c.shardId} · ${c.branch})
+        </option>
+      `).join('');
+  }
+
+  handleAddBeneficiary(name, acc, shardId) {
+    if (!this.user) return;
+    const cleanName = (name || '').trim();
+    const cleanAcc = (acc || '').trim().toUpperCase();
+    const sId = parseInt(shardId ?? '0', 10);
+    const port = `808${sId + 1}`;
+
+    if (!cleanName || cleanName.length < 2) {
+      this.showToast('Please enter a valid payee name', 'warn');
+      return;
+    }
+    if (!cleanAcc || cleanAcc.length < 4) {
+      this.showToast('Please enter a valid account number (e.g. ACC-0000006)', 'warn');
+      return;
+    }
+    if (cleanAcc === this.user.accountId) {
+      this.showToast('Cannot add yourself as a beneficiary', 'warn');
+      return;
+    }
+
+    const currentList = this.getBeneficiariesList();
+    if (currentList.some(b => b.acc === cleanAcc)) {
+      this.showToast(`Beneficiary with account ${cleanAcc} is already registered`, 'warn');
+      return;
+    }
+
+    const newBeneficiary = {
+      name: cleanName,
+      acc: cleanAcc,
+      shard: `Shard ${sId} (:${port})`,
+      port: port
+    };
+
+    const updated = [...currentList, newBeneficiary];
+    localStorage.setItem(`esss_beneficiaries_${this.user.accountId}`, JSON.stringify(updated));
+
+    this.updateBeneficiariesList();
+
+    if (this.eventLog) {
+      this.eventLog.addEvent({
+        action: 'BENEFICIARY_ADDED',
+        details: `BENEFICIARY_ADDED · ${cleanName} (${cleanAcc}) · Shard ${sId} (:${port}) mapped to ring`
+      });
+    }
+
+    this.showToast(`Beneficiary "${cleanName}" (${cleanAcc}) added successfully!`, 'success');
+
+    const modal = document.getElementById('modal-add-beneficiary');
+    if (modal) modal.classList.remove('open');
+    const form = document.getElementById('add-beneficiary-form');
+    if (form) form.reset();
   }
 
   loadBeneficiaries() {
@@ -1237,6 +1438,96 @@ class ErodeBankingApp {
 
     const clearLogBtn = document.getElementById('btn-clear-events');
     if (clearLogBtn) clearLogBtn.addEventListener('click', () => this.eventLog?.clear());
+
+    // Deposit Modal Events
+    const openDepBtn = document.getElementById('btn-open-deposit');
+    const closeDepBtn = document.getElementById('btn-close-deposit');
+    const cancelDepBtn = document.getElementById('btn-cancel-deposit');
+    const depModal = document.getElementById('modal-deposit');
+    const depForm = document.getElementById('deposit-form');
+
+    if (openDepBtn && depModal) {
+      openDepBtn.addEventListener('click', () => {
+        if (!this.user) return;
+        const accSpan = document.getElementById('deposit-target-acc');
+        const balSpan = document.getElementById('deposit-current-bal');
+        if (accSpan) accSpan.textContent = this.user.accountId;
+        if (balSpan) balSpan.textContent = `₹ ${this.currentBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+        depModal.classList.add('open');
+      });
+    }
+
+    const closeDeposit = () => depModal?.classList.remove('open');
+    if (closeDepBtn) closeDepBtn.addEventListener('click', closeDeposit);
+    if (cancelDepBtn) cancelDepBtn.addEventListener('click', closeDeposit);
+
+    document.querySelectorAll('.quick-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const amtInput = document.getElementById('deposit-amount');
+        if (amtInput && chip.dataset.amount) {
+          amtInput.value = chip.dataset.amount;
+        }
+      });
+    });
+
+    if (depForm) {
+      depForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const amt = document.getElementById('deposit-amount')?.value;
+        const method = document.getElementById('deposit-method')?.value || 'UPI';
+        const remarks = document.getElementById('deposit-remarks')?.value || '';
+        this.handleDeposit(amt, method, remarks);
+      });
+    }
+
+    // Add Beneficiary Modal Events
+    const openAddBenBtn = document.getElementById('btn-open-add-beneficiary');
+    const closeAddBenBtn = document.getElementById('btn-close-beneficiary-modal');
+    const cancelAddBenBtn = document.getElementById('btn-cancel-add-beneficiary');
+    const benModal = document.getElementById('modal-add-beneficiary');
+    const benForm = document.getElementById('add-beneficiary-form');
+    const dirSelect = document.getElementById('beneficiary-select-directory');
+
+    if (openAddBenBtn && benModal) {
+      openAddBenBtn.addEventListener('click', () => {
+        this.populateDirectoryDropdown();
+        benModal.classList.add('open');
+      });
+    }
+
+    const closeAddBeneficiary = () => benModal?.classList.remove('open');
+    if (closeAddBenBtn) closeAddBenBtn.addEventListener('click', closeAddBeneficiary);
+    if (cancelAddBenBtn) cancelAddBenBtn.addEventListener('click', closeAddBeneficiary);
+
+    if (dirSelect) {
+      dirSelect.addEventListener('change', () => {
+        const opt = dirSelect.options[dirSelect.selectedIndex];
+        if (opt && opt.value) {
+          const nameInput = document.getElementById('beneficiary-custom-name');
+          const accInput = document.getElementById('beneficiary-custom-acc');
+          const shardInput = document.getElementById('beneficiary-custom-shard');
+          if (nameInput) nameInput.value = opt.dataset.name || '';
+          if (accInput) accInput.value = opt.value;
+          if (shardInput) shardInput.value = opt.dataset.shard || '0';
+        }
+      });
+    }
+
+    if (benForm) {
+      benForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('beneficiary-custom-name')?.value;
+        const acc = document.getElementById('beneficiary-custom-acc')?.value;
+        const shard = document.getElementById('beneficiary-custom-shard')?.value || '0';
+        this.handleAddBeneficiary(name, acc, shard);
+      });
+    }
+
+    // Close modals on clicking overlay backdrop
+    window.addEventListener('click', (e) => {
+      if (e.target === depModal) depModal.classList.remove('open');
+      if (e.target === benModal) benModal.classList.remove('open');
+    });
 
     this.updateClusterControlsUI();
   }
