@@ -6,20 +6,31 @@ export class HashRingVisualizer {
     this.hasFourthShard = false;
     this.arrowAngle = 0;
     this.showArrow = false;
+    this.lastRoutedText = null;
     this.render();
   }
 
   setKilledNodes(killedSet) {
     this.killedNodes = new Set(killedSet);
+    if (this.killedNodes.has('8082')) {
+      this.lastRoutedText = '<span style="color: var(--orange); font-weight: 700;">Node 2 (:8082) evicted · 150 vnodes rerouted clockwise</span>';
+    } else {
+      this.lastRoutedText = '<span style="color: var(--green); font-weight: 700;">Node 2 restored · 450 vnodes balanced</span>';
+    }
     this.render();
   }
 
   setFourthShard(enabled) {
     this.hasFourthShard = enabled;
+    if (enabled) {
+      this.lastRoutedText = '<span style="color: var(--accent-blue); font-weight: 700;">Node 4 registered · 600 vnodes active</span>';
+    } else {
+      this.lastRoutedText = '<span style="color: var(--ink-2);">Node 4 removed · ring restored to 450 vnodes</span>';
+    }
     this.render();
   }
 
-  routeTo(nodeId, key = '') {
+  routeTo(nodeId, key = '', reroutedFrom = null) {
     this.activeNode = nodeId;
     this.showArrow = true;
     let hash = 0x811c9dc5;
@@ -28,6 +39,13 @@ export class HashRingVisualizer {
       hash = Math.imul(hash, 0x01000193);
     }
     this.arrowAngle = Math.abs(hash) % 360;
+
+    if (reroutedFrom) {
+      this.lastRoutedText = `<span style="color: var(--red);">⛔ :${reroutedFrom} down</span> → <span style="color: var(--green); font-weight: 700;">REROUTED to :${nodeId}</span>`;
+    } else {
+      this.lastRoutedText = `Routed key <span style="font-weight: 700; color: var(--navy);">${key.slice(0, 11)}</span> → ${nodeId}`;
+    }
+
     this.render();
 
     clearTimeout(this._pulseTimer);
@@ -35,7 +53,7 @@ export class HashRingVisualizer {
       this.activeNode = null;
       this.showArrow = false;
       this.render();
-    }, 1500);
+    }, 2500);
   }
 
   render() {
@@ -75,7 +93,7 @@ export class HashRingVisualizer {
       const y = (cy + r * Math.sin(angleRad)).toFixed(1);
 
       const isActive = this.activeNode && (this.activeNode.includes(port) || this.activeNode.includes(`shard-${nodeIdx}`));
-      dotsSvg += `<circle cx="${x}" cy="${y}" r="${isActive ? 3.2 : 2}" fill="${dotColor}" opacity="${isKilled ? 0.3 : 0.85}"/>`;
+      dotsSvg += `<circle cx="${x}" cy="${y}" r="${isActive ? 3.5 : 2}" fill="${dotColor}" opacity="${isKilled ? 0.25 : 0.85}"/>`;
     }
 
     const arrowRad = (this.arrowAngle - 90) * (Math.PI / 180);
@@ -83,6 +101,9 @@ export class HashRingVisualizer {
     const arrowY = (cy + (r - 18) * Math.sin(arrowRad)).toFixed(1);
 
     const activeNodesCount = nodeCount - this.killedNodes.size;
+    const statusText = this.lastRoutedText || (this.killedNodes.has('8082')
+      ? '<span style="color: var(--orange); font-weight: 700;">Node 2 evicted · 150 vnodes rerouted clockwise</span>'
+      : '<span>Deterministic Murmur3 routing active</span>');
 
     this.container.innerHTML = `
       <div class="telemetry-card-top">
@@ -112,6 +133,9 @@ export class HashRingVisualizer {
             <circle cx="${arrowX}" cy="${arrowY}" r="4" fill="#1f6fd1" />
           ` : ''}
         </svg>
+      </div>
+      <div style="margin-top: 4px; padding: 4px 8px; border-radius: 4px; font-size: 10.5px; font-family: var(--font-mono); text-align: center; background: var(--fill-grey); border: 1px solid var(--border); min-height: 22px; display: flex; align-items: center; justify-content: center;">
+        ${statusText}
       </div>
     `;
   }
