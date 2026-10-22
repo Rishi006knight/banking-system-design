@@ -1,0 +1,2 @@
+# Ensure shell scripts always have LF line endings in git and checkout
+*.sh text eol=lf

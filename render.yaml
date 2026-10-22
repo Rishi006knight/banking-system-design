@@ -7,6 +7,4 @@ services:
     envVars:
       - key: PORT
         value: 8080
-      - key: JAVA_TOOL_OPTIONS
-        value: "-Xmx512m -XX:+UseG1GC"
     healthCheckPath: /
