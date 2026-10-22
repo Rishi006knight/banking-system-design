@@ -117,8 +117,8 @@ def main():
             w.writerow(["Naive Modulo-N (hash % N)", mod_remapped_count, f"{mod_remapped_pct}%", 1000 - mod_remapped_count, f"{mod_preserved_pct}%"])
         print(f"  [SAVED] {remap_path}")
 
-    # 6. Generate Chart
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    # 6. Generate Standard Matplotlib Chart
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10.5, 4.5))
 
     nodes = ["node-8081", "node-8082", "node-8083", "node-8084"]
     counts_3 = [dist_3.get("node-8081", 0), dist_3.get("node-8082", 0), dist_3.get("node-8083", 0), 0]
@@ -127,33 +127,35 @@ def main():
     x = [0, 1, 2, 3]
     w = 0.35
 
-    ax1.bar([i - w/2 for i in x], counts_3, width=w, label="3 Nodes (Before)", color="#64748b", edgecolor="#334155")
-    ax1.bar([i + w/2 for i in x], counts_4, width=w, label="4 Nodes (After)", color="#0284c7", edgecolor="#0369a1")
+    ax1.bar([i - w/2 for i in x], counts_3, width=w, label="3 Nodes", color="#aec7e8", edgecolor="#000000", linewidth=0.6)
+    ax1.bar([i + w/2 for i in x], counts_4, width=w, label="4 Nodes", color="#1f77b4", edgecolor="#000000", linewidth=0.6)
     ax1.set_xticks(x)
-    ax1.set_xticklabels(nodes, rotation=15)
-    ax1.set_ylabel("Assigned Keys (out of 1,000)")
-    ax1.set_title("Node Load Distribution (Scale-Out 3 -> 4 Nodes)")
-    ax1.legend()
-    ax1.grid(True, linestyle="--", alpha=0.5)
+    ax1.set_xticklabels(nodes)
+    ax1.set_xlabel("Server Node", fontsize=10)
+    ax1.set_ylabel("Assigned Keys", fontsize=10)
+    ax1.set_title("Node Key Distribution (3 vs 4 Nodes)", fontsize=11, fontweight='bold', pad=10)
+    ax1.legend(frameon=True, fontsize=9.0)
+    ax1.grid(True, axis='y', linestyle="--", alpha=0.5)
 
     # Chart 2: Remapping Comparison
-    categories = ["Consistent Hash Ring\n(150 Virtual Nodes)", "Naive Modulo-N\n(hash % N)"]
+    categories = ["Consistent Hash Ring", "Naive Modulo-N"]
     remapped = [ring_remapped_pct, mod_remapped_pct]
     preserved = [ring_preserved_pct, mod_preserved_pct]
 
-    ax2.bar(categories, preserved, label="Preserved Cache State (%)", color="#10b981", width=0.45)
-    ax2.bar(categories, remapped, bottom=preserved, label="Remapped Keys (%)", color="#ef4444", width=0.45)
-    ax2.set_ylabel("Key Allocation (%)")
-    ax2.set_title("Cache Invalidation on Scale-Out (Ring vs Mod-N)")
-    ax2.legend(loc="lower right")
-    ax2.grid(True, linestyle="--", alpha=0.5)
+    ax2.bar(categories, preserved, label="Preserved Keys (%)", color="#2ca02c", edgecolor="#000000", linewidth=0.6, width=0.45)
+    ax2.bar(categories, remapped, bottom=preserved, label="Remapped Keys (%)", color="#d62728", edgecolor="#000000", linewidth=0.6, width=0.45)
+    ax2.set_xlabel("Algorithm", fontsize=10)
+    ax2.set_ylabel("Key Allocation (%)", fontsize=10)
+    ax2.set_title("Key Allocation on Scale-Out", fontsize=11, fontweight='bold', pad=10)
+    ax2.legend(frameon=True, loc="lower right", fontsize=9.0)
+    ax2.grid(True, axis='y', linestyle="--", alpha=0.5)
 
     for i in range(2):
-        ax2.text(i, preserved[i] / 2, f"{preserved[i]}%\nPreserved", ha="center", va="center", color="white", fontweight="bold")
-        ax2.text(i, preserved[i] + remapped[i] / 2, f"{remapped[i]}%\nRemapped", ha="center", va="center", color="white", fontweight="bold")
+        ax2.text(i, preserved[i] / 2, f"{preserved[i]}%", ha="center", va="center", color="white", fontweight="bold")
+        ax2.text(i, preserved[i] + remapped[i] / 2, f"{remapped[i]}%", ha="center", va="center", color="white", fontweight="bold")
 
     plt.tight_layout()
-    for d in ['results/charts', 'docs/charts']:
+    for d in ['results/charts', 'docs/charts', 'docs/results/charts']:
         os.makedirs(d, exist_ok=True)
         img_path = os.path.join(d, "scaleout_remapping.png")
         plt.savefig(img_path, dpi=300, bbox_inches='tight')

@@ -32,6 +32,7 @@ public class TransferController {
     public ResponseEntity<?> transfer(
             @Valid @RequestBody TransferRequest req,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @RequestHeader(value = "X-Saga-Delay-Ms", required = false, defaultValue = "0") long sagaDelayMs,
             HttpServletRequest request,
             HttpServletResponse response) {
 
@@ -53,7 +54,7 @@ public class TransferController {
         }
 
         try {
-            TransferResponse result = transferService.executeTransfer(req, idempotencyKey);
+            TransferResponse result = transferService.executeTransfer(req, idempotencyKey, sagaDelayMs);
             response.setHeader("X-Shard", result.sourceShard());
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException | IllegalStateException e) {

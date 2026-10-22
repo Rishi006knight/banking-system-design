@@ -1,13 +1,13 @@
-System,Workload,Concurrency_VUs,Throughput_2xx_RPS,Total_RPS,Latency_p50_ms,Latency_p95_ms,Latency_p99_ms,HTTP_2xx_Count,HTTP_4xx_Expected,HTTP_429_RateLimit,HTTP_5xx_Error,HTTP_Timeouts,Error_Rate_5xx_Timeout_Pct,Rate_Limit_429_Pct,Cache_Hit_Pct
-Proposed (Sharded + Ring),Mixed Workload (50 VUs),50,311.96,444.02,41.4,310.54,658.59,2516,1055,10,0,0,0.0,0.28,24.6
-Proposed (Sharded + Ring),Mixed Workload (100 VUs),100,428.7,677.65,47.42,464.22,815.61,3475,1637,381,0,0,0.0,6.94,31.81
-Proposed (Sharded + Ring),Mixed Workload (200 VUs),200,741.55,1103.91,44.02,617.26,1178.51,6080,2213,758,0,0,0.0,8.37,35.78
-Proposed (Sharded + Ring),Mixed Workload (400 VUs),400,680.17,931.12,179.51,1166.01,1856.93,5784,2054,80,0,0,0.0,1.01,34.21
-Proposed (Sharded + Ring),Mixed Workload (800 VUs),800,597.75,903.48,577.09,1526.2,1906.83,5103,2598,12,0,0,0.0,0.16,32.21
-Proposed (Sharded + Ring),Mixed Workload (1000 VUs),1000,656.14,1018.53,700.68,1804.21,2577.5,5497,3036,0,0,0,0.0,0.0,31.1
-Baseline (Single DB),Mixed Workload (50 VUs),50,266.2,273.35,154.39,389.79,660.98,2161,58,0,0,0,0.0,0.0,0.0
-Baseline (Single DB),Mixed Workload (100 VUs),100,322.11,335.27,265.91,594.28,846.8,2643,108,0,0,0,0.0,0.0,0.0
-Baseline (Single DB),Mixed Workload (200 VUs),200,357.22,380.63,450.56,1117.95,1257.87,3174,208,0,0,0,0.0,0.0,0.0
-Baseline (Single DB),Mixed Workload (400 VUs),400,400.27,446.31,822.65,1967.19,2095.13,3600,414,0,0,0,0.0,0.0,0.0
-Baseline (Single DB),Mixed Workload (800 VUs),800,337.16,764.03,1783.66,4725.93,4989.71,3236,568,0,0,3529,48.12,0.0,0.0
-Baseline (Single DB),Mixed Workload (1000 VUs),1000,360.92,1592.7,1702.95,4792.43,5371.0,3536,536,0,0,11532,73.9,0.0,0.0
+System,Workload,Concurrency_VUs,Throughput_2xx_RPS,Total_RPS,Latency_p50_ms,Latency_p95_ms,HTTP_2xx_Count,HTTP_4xx_Expected,HTTP_429_RateLimit,HTTP_5xx_Error,HTTP_Timeouts,Error_Rate_5xx_Timeout_Pct,Rate_Limit_429_Pct,Cache_Hit_Pct
+Proposed (Sharded + Ring),Mixed Workload (50 VUs),50,396.49,428.37,45.27,345.08,5970,0,480,0,0,0.0,7.44,24.6
+Proposed (Sharded + Ring),Mixed Workload (100 VUs),100,305.95,312.03,35.44,1421.29,4675,0,93,0,0,0.0,1.95,33.4
+Proposed (Sharded + Ring),Mixed Workload (200 VUs),200,56.66,56.66,1240.79,14783.81,965,0,0,0,0,0.0,0.0,34.8
+Proposed (Sharded + Ring),Mixed Workload (400 VUs),400,219.52,219.52,686.9,7985.34,3472,0,0,0,0,0.0,0.0,32.7
+Proposed (Sharded + Ring),Mixed Workload (800 VUs),800,134.31,196.55,570.15,10210.66,2689,0,0,1,1245,31.66,0.0,33.4
+Proposed (Sharded + Ring),Mixed Workload (1000 VUs),1000,106.27,147.51,2678.02,9100.12,1930,0,0,0,749,27.96,0.0,36.2
+Baseline (Single DB),Mixed Workload (50 VUs),50,242.08,242.08,154.48,490.21,3678,0,0,0,0,0.0,0.0,0.0
+Baseline (Single DB),Mixed Workload (100 VUs),100,953.25,953.25,63.77,183.0,14400,0,0,0,0,0.0,0.0,0.0
+Baseline (Single DB),Mixed Workload (200 VUs),200,621.94,621.94,195.52,557.31,9454,0,0,0,0,0.0,0.0,0.0
+Baseline (Single DB),Mixed Workload (400 VUs),400,210.96,211.09,1179.98,7316.09,3373,2,0,0,0,0.0,0.0,0.0
+Baseline (Single DB),Mixed Workload (800 VUs),800,131.41,457.75,1231.24,17753.53,2592,1,0,0,6436,71.28,0.0,0.0
+Baseline (Single DB),Mixed Workload (1000 VUs),1000,163.56,643.13,680.48,16861.82,3096,0,0,0,9078,74.57,0.0,0.0

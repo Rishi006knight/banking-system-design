@@ -1,4 +1,4 @@
 System_Architecture,Data_Scale,Total_Transactions,Queries_Sampled,Avg_Latency_ms,p50_ms,p95_ms,p99_ms,Speedup_vs_Baseline
-Baseline Monolith (Single DB),"1x Scale (10,000 txs)",10000,1000,45.64,43.47,66.48,129.92,1.0x (Reference)
-Baseline Monolith (Single DB),"10x Scaled (100,000 txs)",100000,1000,63.39,60.37,92.34,180.45,1.0x (Baseline)
-Proposed Sharded Cluster,"10x Scaled (100,000 txs across 3 shards)",100000,1000,32.51,28.53,50.44,111.41,1.9x faster
+Baseline Monolith (Single DB),"1x Scale (10,000 txs)",10000,1000,37.81,37.68,55.81,66.47,1.0x (Reference)
+Baseline Monolith (Single DB),"10x Scaled (100,000 txs)",100000,1000,52.51,52.34,77.51,92.32,1.0x (Baseline)
+Proposed Sharded Cluster,"10x Scaled (100,000 txs across 3 shards)",100000,1000,37.06,34.28,57.3,112.65,1.4x faster

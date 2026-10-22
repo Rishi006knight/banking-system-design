@@ -221,6 +221,9 @@ public class BaselineController {
                 if (!billRows.isEmpty()) {
                     amount = ((Number) billRows.get(0).get("amount_cents")).longValue();
                     db.update("UPDATE bills SET status = 'PAID' WHERE bill_id = ?", billId);
+                } else {
+                    db.update("INSERT OR REPLACE INTO bills (bill_id, customer_id, biller_code, biller_name, amount_cents, status, created_at, paid_at) VALUES (?, ?, ?, ?, ?, 'PAID', ?, ?)",
+                            billId, "CUST-BASE", "UTIL_BILL", "Utility Service Provider", amount, now, now);
                 }
 
                 long curBal = ((Number) accRows.get(0).get("balance_cents")).longValue();

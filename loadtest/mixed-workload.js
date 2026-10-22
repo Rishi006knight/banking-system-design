@@ -6,12 +6,36 @@ const vus = parseInt(__ENV.VUS || '50', 10);
 const duration = __ENV.DURATION || '10s';
 const BASE_URL = __ENV.TARGET_URL || 'http://localhost:8080';
 
-// Explicit Error Accounting Counters (Audit Step 2 Requirement)
+// Real seeded users for realistic authentication
+const users = JSON.parse(open('./users.json'));
+
+// Fine-grained Global Error Accounting Counters
 export const http2xx = new Counter('http_2xx');
-export const http4xxExpected = new Counter('http_4xx_expected');
+export const http400 = new Counter('http_400');
+export const http401 = new Counter('http_401');
+export const http404 = new Counter('http_404');
+export const http409 = new Counter('http_409');
 export const http429RateLimit = new Counter('http_429_rate_limit');
+export const http4xxExpected = new Counter('http_4xx_expected');
 export const http5xxServerError = new Counter('http_5xx_server_error');
 export const httpTimeouts = new Counter('http_timeouts');
+
+// Per-Endpoint Counters for Granular Error Breakdown
+export const epLogin2xx = new Counter('ep_login_2xx');
+export const epLogin4xx = new Counter('ep_login_4xx');
+export const epLogin429 = new Counter('ep_login_429');
+export const epBalance2xx = new Counter('ep_balance_2xx');
+export const epBalance4xx = new Counter('ep_balance_4xx');
+export const epBalance429 = new Counter('ep_balance_429');
+export const epTransfer2xx = new Counter('ep_transfer_2xx');
+export const epTransfer4xx = new Counter('ep_transfer_4xx');
+export const epTransfer429 = new Counter('ep_transfer_429');
+export const epBill2xx = new Counter('ep_bill_2xx');
+export const epBill4xx = new Counter('ep_bill_4xx');
+export const epBill429 = new Counter('ep_bill_429');
+export const epHistory2xx = new Counter('ep_history_2xx');
+export const epHistory4xx = new Counter('ep_history_4xx');
+export const epHistory429 = new Counter('ep_history_429');
 
 export const options = {
     vus: vus,
@@ -21,18 +45,39 @@ export const options = {
     },
 };
 
-// Helper to record fine-grained error accounting
-function recordMetrics(res) {
+// Helper to record fine-grained error accounting per endpoint
+function recordMetrics(res, endpoint) {
     if (!res || res.status === 0) {
         httpTimeouts.add(1);
     } else if (res.status >= 200 && res.status < 300) {
         http2xx.add(1);
+        if (endpoint === 'login') epLogin2xx.add(1);
+        else if (endpoint === 'balance') epBalance2xx.add(1);
+        else if (endpoint === 'transfers') epTransfer2xx.add(1);
+        else if (endpoint === 'billpayments') epBill2xx.add(1);
+        else if (endpoint === 'transactions') epHistory2xx.add(1);
     } else if (res.status === 429) {
         http429RateLimit.add(1);
+        if (endpoint === 'login') epLogin429.add(1);
+        else if (endpoint === 'balance') epBalance429.add(1);
+        else if (endpoint === 'transfers') epTransfer429.add(1);
+        else if (endpoint === 'billpayments') epBill429.add(1);
+        else if (endpoint === 'transactions') epHistory429.add(1);
     } else if (res.status >= 400 && res.status < 500) {
         http4xxExpected.add(1);
+        if (res.status === 400) http400.add(1);
+        else if (res.status === 401) http401.add(1);
+        else if (res.status === 404) http404.add(1);
+        else if (res.status === 409) http409.add(1);
+
+        if (endpoint === 'login') epLogin4xx.add(1);
+        else if (endpoint === 'balance') epBalance4xx.add(1);
+        else if (endpoint === 'transfers') epTransfer4xx.add(1);
+        else if (endpoint === 'billpayments') epBill4xx.add(1);
+        else if (endpoint === 'transactions') epHistory4xx.add(1);
     } else if (res.status >= 500) {
         http5xxServerError.add(1);
+        console.log(`[5XX ERROR] Status: ${res.status} | Body: ${res.body}`);
     }
 }
 
@@ -60,9 +105,10 @@ export default function () {
 
     // 1. Authenticate once per VU on the first iteration
     if (!vuAuthToken) {
-        const userNum = ((vuId - 1) % 200) + 1;
+        const userIndex = (vuId - 1) % users.length;
+        const user = users[userIndex];
         const loginPayload = JSON.stringify({
-            username: `aarav.sharma${userNum}`,
+            username: user.username,
             password: 'Password@123'
         });
 
@@ -70,22 +116,23 @@ export default function () {
             headers: Object.assign({}, headers, {
                 'Content-Type': 'application/json',
             }),
+            tags: { endpoint: 'login' },
         });
-        recordMetrics(loginRes);
+        recordMetrics(loginRes, 'login');
 
         if (loginRes.status === 200) {
             try {
                 const body = JSON.parse(loginRes.body);
                 vuAuthToken = body.token || 'session-token-' + vuId;
-                vuAccountId = body.primaryAccountId || getRandomAccount();
+                vuAccountId = body.primaryAccountId || user.accountId || getRandomAccount();
             } catch (e) {
                 vuAuthToken = 'session-token-' + vuId;
-                vuAccountId = getRandomAccount();
+                vuAccountId = user.accountId || getRandomAccount();
             }
         } else {
             // Fallback token if user credentials not in seed range
             vuAuthToken = 'session-token-' + vuId;
-            vuAccountId = getRandomAccount();
+            vuAccountId = user.accountId || getRandomAccount();
         }
         sleep(0.01);
         return;
@@ -104,8 +151,9 @@ export default function () {
             headers: Object.assign({}, authHeaders, {
                 'X-Account-Id': accId,
             }),
+            tags: { endpoint: 'balance' },
         });
-        recordMetrics(res);
+        recordMetrics(res, 'balance');
         check(res, {
             'balance read status valid': (r) => r.status === 200 || r.status === 429,
         });
@@ -131,16 +179,16 @@ export default function () {
                 'Idempotency-Key': idemKey,
                 'X-Account-Id': srcAcc,
             }),
+            tags: { endpoint: 'transfers' },
         });
-        recordMetrics(res);
+        recordMetrics(res, 'transfers');
         check(res, {
             'transfer status valid': (r) => r.status === 200 || r.status === 429,
         });
     } else if (rand < 0.95) {
         // 3. 10% Utility Bill Payments
         const accId = vuAccountId || getRandomAccount();
-        const billNum = (Math.floor(Math.random() * 20) + 1);
-        const billId = 'BILL-' + String(billNum).padStart(7, '0');
+        const billId = `BILL-VU${vuId}-${__ITER}-${Math.floor(Math.random() * 1000000)}`;
         const idemKey = `K6-BILL-${vuId}-${__ITER}-${Date.now()}`;
 
         const payload = JSON.stringify({
@@ -154,8 +202,9 @@ export default function () {
                 'Idempotency-Key': idemKey,
                 'X-Account-Id': accId,
             }),
+            tags: { endpoint: 'billpayments' },
         });
-        recordMetrics(res);
+        recordMetrics(res, 'billpayments');
         check(res, {
             'bill payment status valid': (r) => r.status === 200 || r.status === 429,
         });
@@ -166,8 +215,9 @@ export default function () {
             headers: Object.assign({}, authHeaders, {
                 'X-Account-Id': accId,
             }),
+            tags: { endpoint: 'transactions' },
         });
-        recordMetrics(res);
+        recordMetrics(res, 'transactions');
         check(res, {
             'history status valid': (r) => r.status === 200 || r.status === 429,
         });

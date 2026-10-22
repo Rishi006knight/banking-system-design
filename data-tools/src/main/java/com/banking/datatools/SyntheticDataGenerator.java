@@ -39,7 +39,8 @@ public class SyntheticDataGenerator {
     };
 
     // BCrypt hash for default password: "Password@123"
-    public static final String DEFAULT_PASSWORD_HASH = "$2a$10$wT0lQn2L9K6U3B4gK.qO6eY1W8d0rO5mD6v8yN2zB8xK9pL0mN1q.";
+    // Valid BCrypt hash (10 rounds) of "Password@123"
+    public static final String DEFAULT_PASSWORD_HASH = "$2a$10$lfAwpx4cfwAmdvRoHbI.O.8s1u1KQ0IE/IF3VCYGl2Mjw6eQDf0Xe";
 
     public SyntheticDataGenerator(ShardRouter router) {
         this(router, new Random(42));

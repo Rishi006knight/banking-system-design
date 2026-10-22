@@ -35,6 +35,10 @@ public class TransferService {
     }
 
     public TransferResponse executeTransfer(TransferRequest req, String idempotencyKey) {
+        return executeTransfer(req, idempotencyKey, 0L);
+    }
+
+    public TransferResponse executeTransfer(TransferRequest req, String idempotencyKey, long sagaDelayMs) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new IllegalArgumentException("Header 'Idempotency-Key' is required for fund transfers");
         }
@@ -69,7 +73,7 @@ public class TransferService {
             // ==========================================
             // CROSS-SHARD TRANSFER: SAGA Orchestration
             // ==========================================
-            response = executeCrossShardSagaTransfer(sourceShard, destShard, req, transferId, idempotencyKey, now);
+            response = executeCrossShardSagaTransfer(sourceShard, destShard, req, transferId, idempotencyKey, now, sagaDelayMs);
         }
 
         // Cache completed transfer under Idempotency-Key for 24 hours
@@ -170,7 +174,7 @@ public class TransferService {
     }
 
     private TransferResponse executeCrossShardSagaTransfer(
-            Shard sourceShard, Shard destShard, TransferRequest req, String transferId, String idempotencyKey, long now) {
+            Shard sourceShard, Shard destShard, TransferRequest req, String transferId, String idempotencyKey, long now, long sagaDelayMs) {
 
         // ========================================================
         // PRE-FLIGHT CHECK: Verify Destination Account Exists
@@ -222,6 +226,15 @@ public class TransferService {
 
         // Invalidate source cache immediately
         kvStore.remove("balance:" + req.sourceAccountId());
+
+        // Injected delay for crash simulation/testing
+        if (sagaDelayMs > 0) {
+            try {
+                Thread.sleep(sagaDelayMs);
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+        }
 
         // ========================================================
         // SAGA STEP 2: Credit Destination Shard

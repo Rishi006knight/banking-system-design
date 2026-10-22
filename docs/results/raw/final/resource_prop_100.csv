@@ -1,0 +1,6 @@
+Elapsed_Sec,Service_Name,PID,CPU_Percent,Memory_WorkingSet_MB
+0.0,java-18980,18980,0.0,185.32
+0.0,java-20096,20096,0.0,112.8
+0.0,java-21476,21476,0.0,342.1
+0.0,java-40748,40748,0.0,117.64
+0.0,java-42748,42748,0.0,3.98

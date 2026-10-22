@@ -70,9 +70,10 @@ public class AuthService {
         // Cache customer username -> shard mapping in KV store for quick login routing
         kvStore.put("user_shard:" + req.username(), shard.getShardId(), 86400000); // 24 hours
 
-        // Generate session token
-        String token = UUID.randomUUID().toString();
-        kvStore.put("session:" + token, customerId + ":" + req.username() + ":" + accountId, sessionTtlMillis);
+        // Generate stateless signed session token
+        String sessionData = customerId + ":" + req.username() + ":" + accountId;
+        String token = generateSignedToken(sessionData);
+        kvStore.put("session:" + token, sessionData, sessionTtlMillis);
 
         return new AuthResponse(token, customerId, req.username(), req.fullName(), accountId, sessionTtlMillis / 1000);
     }
@@ -128,21 +129,79 @@ public class AuthService {
         );
         String primaryAccountId = accQr.isEmpty() ? null : (String) accQr.firstRow().get("account_id");
 
-        // Generate session token
-        String token = UUID.randomUUID().toString();
-        kvStore.put("session:" + token, customerId + ":" + username + ":" + primaryAccountId, sessionTtlMillis);
+        // Generate stateless signed session token
+        String sessionData = customerId + ":" + username + ":" + primaryAccountId;
+        String token = generateSignedToken(sessionData);
+        kvStore.put("session:" + token, sessionData, sessionTtlMillis);
 
         return new AuthResponse(token, customerId, username, fullName, primaryAccountId, sessionTtlMillis / 1000);
+    }
+
+    private static final String SECRET_KEY = "banking-session-secret-ucs3513-ssn-be-cse";
+
+    private String generateSignedToken(String payload) {
+        long expiry = System.currentTimeMillis() + sessionTtlMillis;
+        String raw = payload + ":" + expiry;
+        String encodedPayload = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(raw.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        String signature = sign(encodedPayload);
+        return encodedPayload + "." + signature;
+    }
+
+    private String sign(String data) {
+        try {
+            javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+            mac.init(new javax.crypto.spec.SecretKeySpec(SECRET_KEY.getBytes(java.nio.charset.StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] hmac = mac.doFinal(data.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(hmac);
+        } catch (Exception e) {
+            throw new RuntimeException("Error signing session token", e);
+        }
     }
 
     public void logout(String token) {
         if (token != null && !token.isBlank()) {
             kvStore.remove("session:" + token);
+            kvStore.put("revoked:" + token, "true", sessionTtlMillis);
         }
     }
 
     public String verifySession(String token) {
         if (token == null || token.isBlank()) return null;
-        return kvStore.get("session:" + token);
+
+        // Check if token was explicitly revoked
+        if ("true".equals(kvStore.get("revoked:" + token))) {
+            return null;
+        }
+
+        // 1. Check local cache
+        String cached = kvStore.get("session:" + token);
+        if (cached != null) {
+            return cached;
+        }
+
+        // 2. Validate stateless signed token
+        if (token.contains(".")) {
+            String[] parts = token.split("\\.");
+            if (parts.length == 2) {
+                String encodedPayload = parts[0];
+                String signature = parts[1];
+                if (signature.equals(sign(encodedPayload))) {
+                    try {
+                        String raw = new String(java.util.Base64.getUrlDecoder().decode(encodedPayload), java.nio.charset.StandardCharsets.UTF_8);
+                        int lastColon = raw.lastIndexOf(':');
+                        if (lastColon > 0) {
+                            long expiry = Long.parseLong(raw.substring(lastColon + 1));
+                            if (System.currentTimeMillis() < expiry) {
+                                String sessionData = raw.substring(0, lastColon);
+                                // Cache locally for fast subsequent lookups
+                                kvStore.put("session:" + token, sessionData, Math.max(1000L, expiry - System.currentTimeMillis()));
+                                return sessionData;
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+        return null;
     }
 }

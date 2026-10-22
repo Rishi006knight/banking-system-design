@@ -1,0 +1,5 @@
+run_id,system,vus,t,service,cpu_pct,rss_mb
+prop_100,Proposed,100,1.5,node-8083,0.0,156.89
+prop_100,Proposed,100,1.5,node-8082,0.0,158.83
+prop_100,Proposed,100,1.5,node-8081,0.0,167.76
+prop_100,Proposed,100,1.5,gateway-8080,0.0,301.18

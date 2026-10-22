@@ -47,7 +47,7 @@
   - Optional LRU capacity eviction using access-order tracking.
   - Nanosecond latency tracking for hit/miss ratios.
 * **Banking Application:**
-  - Token/Session authentication (TTL: 15 min).
+  - Token/Session authentication: Stateless HMAC-SHA256 signed Bearer tokens (`Base64URL(payload:expiry).Base64URL(signature)`) validated independently by any node without inter-node session replication; KeyValueStore maintains fast L1 cache and instant logout revocation blacklist (`revoked:<token>`) with 15 min TTL.
   - OTP verification (TTL: 5 min).
   - Account balance cache (write-through / invalidate on transfer).
   - Idempotency keys (TTL: 24 hours) for at-most-once transfer execution.
@@ -158,8 +158,8 @@ All 5 components were implemented in `common` with zero external dependencies an
 ## 15. Phase 8: Fault Tolerance & Scalability Scenarios (`scripts/`)
 * **Decision:** Codify 3 real-world distributed fault and scaling experiments:
   1. *Server Node Failure & Self-Healing Failover (`scripts/experiment-server-failure.ps1`):* Injects failure into `node-8082`; verifies health checker evicts node from hash ring after 2 strikes, traffic re-routes to healthy nodes without persistent error, and node is re-added upon recovery.
-  2. *Application Server Scale-Out (`scripts/experiment-scaleout.ps1`):* Dynamically adds 4th node `node-8084`; proves that 150-vnode Consistent Hashing remaps only 23.36% of keys, preserving 76.64% of existing cache states (vs 75% total invalidation with naive modulo).
-  3. *Database Shard Addition (`scripts/experiment-reshard.ps1`):* Adds 4th shard `bank-shard-3` and executes `ShardMigrationService`. Proves exactly 20.0% of accounts migrated with **0.00 cents financial balance drift** (100% exact conservation invariant verified).
+  2. *Application Server Scale-Out (`scripts/experiment-scaleout.ps1`):* Dynamically adds 4th node `node-8084`; verifies that 150-vnode Consistent Hashing remaps only 23.36% of keys, preserving 76.64% of existing cache states (vs 75% total invalidation with naive modulo).
+  3. *Database Shard Addition (`scripts/experiment-reshard.ps1`):* Adds 4th shard `bank-shard-3` and executes `ShardMigrationService`. Verifies exactly 20.0% of accounts migrated with **0.00 cents financial balance drift** (100% exact conservation invariant verified).
 
 ---
 
@@ -175,7 +175,7 @@ All 5 components were implemented in `common` with zero external dependencies an
   2. **Smoke Test Health Verification (`scripts/smoke.py`):** Verified 10/10 endpoints passing with 0 errors on both Proposed (:8080) and Baseline (:8090) at low load, fixing the missing `updated_at` column in baseline transfers and bill seeding formats.
   3. **Benchmark Suite Redesign:**
      - Virtual Users authenticate **once** on the first iteration and reuse Bearer tokens across subsequent iterations.
-     - `X-Benchmark-Client` header completely eliminated.
+     - `X-Benchmark-Client` header completely removed.
      - Each VU uses an authentic distinct client IP (`10.0.<vu_hi>.<vu_lo>`).
      - Error accounting tracks expected 2xx, expected 4xx, 429 rate limits, 5xx server exceptions, and timeouts.
      - Stepped ramp evaluates 50, 100, 200, 400, 800, and 1,000 VUs.

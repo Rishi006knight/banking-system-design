@@ -50,3 +50,4 @@ Thumbs.db
 __pycache__/
 *.pyc
 powershell.bat
+.tmp/

@@ -21,35 +21,35 @@ SERVICES = [
     {
         "name": "node-8081",
         "port": 8081,
-        "cmd": ["java", "-Dserver.port=8081", "-Dbanking.node-id=1", "-Dbanking.shards.db-path=./data/bank-shard-0.db", "-jar", "bank-service/target/bank-service-1.0.0-SNAPSHOT.jar"],
+        "cmd": ["java", "-Djava.io.tmpdir=D:/projects/banking/.tmp", "-Dorg.sqlite.tmpdir=D:/projects/banking/.tmp", "-Dserver.port=8081", "-Dbanking.node-id=1", "-Dbanking.shards.db-path=./data/bank-shard-0.db", "-jar", "bank-service/target/bank-service-1.0.0-SNAPSHOT.jar"],
         "stdout": "logs/node-8081.log",
         "stderr": "logs/node-8081-err.log"
     },
     {
         "name": "node-8082",
         "port": 8082,
-        "cmd": ["java", "-Dserver.port=8082", "-Dbanking.node-id=2", "-Dbanking.shards.db-path=./data/bank-shard-1.db", "-jar", "bank-service/target/bank-service-1.0.0-SNAPSHOT.jar"],
+        "cmd": ["java", "-Djava.io.tmpdir=D:/projects/banking/.tmp", "-Dorg.sqlite.tmpdir=D:/projects/banking/.tmp", "-Dserver.port=8082", "-Dbanking.node-id=2", "-Dbanking.shards.db-path=./data/bank-shard-1.db", "-jar", "bank-service/target/bank-service-1.0.0-SNAPSHOT.jar"],
         "stdout": "logs/node-8082.log",
         "stderr": "logs/node-8082-err.log"
     },
     {
         "name": "node-8083",
         "port": 8083,
-        "cmd": ["java", "-Dserver.port=8083", "-Dbanking.node-id=3", "-Dbanking.shards.db-path=./data/bank-shard-2.db", "-jar", "bank-service/target/bank-service-1.0.0-SNAPSHOT.jar"],
+        "cmd": ["java", "-Djava.io.tmpdir=D:/projects/banking/.tmp", "-Dorg.sqlite.tmpdir=D:/projects/banking/.tmp", "-Dserver.port=8083", "-Dbanking.node-id=3", "-Dbanking.shards.db-path=./data/bank-shard-2.db", "-jar", "bank-service/target/bank-service-1.0.0-SNAPSHOT.jar"],
         "stdout": "logs/node-8083.log",
         "stderr": "logs/node-8083-err.log"
     },
     {
         "name": "baseline-8090",
         "port": 8090,
-        "cmd": ["java", "-Dserver.port=8090", "-Dbaseline.db-path=./data/baseline.db", "-jar", "baseline/target/baseline-1.0.0-SNAPSHOT.jar"],
+        "cmd": ["java", "-Djava.io.tmpdir=D:/projects/banking/.tmp", "-Dorg.sqlite.tmpdir=D:/projects/banking/.tmp", "-Dserver.port=8090", "-Dbaseline.db-path=./data/baseline.db", "-jar", "baseline/target/baseline-1.0.0-SNAPSHOT.jar"],
         "stdout": "logs/baseline.log",
         "stderr": "logs/baseline-err.log"
     },
     {
         "name": "gateway-8080",
         "port": 8080,
-        "cmd": ["java", "-Dserver.port=8080", "-jar", "gateway/target/gateway-1.0.0-SNAPSHOT.jar"],
+        "cmd": ["java", "-Djava.io.tmpdir=D:/projects/banking/.tmp", "-Dorg.sqlite.tmpdir=D:/projects/banking/.tmp", "-Dserver.port=8080", "-jar", "gateway/target/gateway-1.0.0-SNAPSHOT.jar"],
         "stdout": "logs/gateway.log",
         "stderr": "logs/gateway-err.log"
     }

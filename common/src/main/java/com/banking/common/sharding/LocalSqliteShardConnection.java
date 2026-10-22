@@ -24,7 +24,7 @@ public class LocalSqliteShardConnection implements ShardConnection {
         try {
             if (connection == null || connection.isClosed()) {
                 SQLiteConfig config = new SQLiteConfig();
-                config.setBusyTimeout(5000); // 5 second busy wait
+                config.setBusyTimeout(15000); // 15 second busy wait
                 config.setJournalMode(SQLiteConfig.JournalMode.WAL);
                 config.setSynchronous(SQLiteConfig.SynchronousMode.NORMAL);
                 config.setTransactionMode(SQLiteConfig.TransactionMode.IMMEDIATE);
@@ -35,7 +35,7 @@ public class LocalSqliteShardConnection implements ShardConnection {
                     stmt.execute("PRAGMA journal_mode = WAL;");
                     stmt.execute("PRAGMA synchronous = NORMAL;");
                     stmt.execute("PRAGMA foreign_keys = ON;");
-                    stmt.execute("PRAGMA busy_timeout = 5000;");
+                    stmt.execute("PRAGMA busy_timeout = 15000;");
                 }
             }
         } catch (SQLException e) {
@@ -81,7 +81,7 @@ public class LocalSqliteShardConnection implements ShardConnection {
 
     @Override
     public synchronized int executeUpdate(String sql, Object... params) {
-        int maxRetries = 5;
+        int maxRetries = 10;
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             connect();
             try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
@@ -100,7 +100,7 @@ public class LocalSqliteShardConnection implements ShardConnection {
 
     @Override
     public synchronized void executeBatch(List<String> sqlStatements) {
-        int maxRetries = 5;
+        int maxRetries = 10;
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             connect();
             try (Statement stmt = connection.createStatement()) {
@@ -123,7 +123,7 @@ public class LocalSqliteShardConnection implements ShardConnection {
 
     @Override
     public synchronized void executeInTransaction(TransactionCallback callback) {
-        int maxRetries = 5;
+        int maxRetries = 10;
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             connect();
             boolean originalAutoCommit;

@@ -1,0 +1,5 @@
+run_id,system,vus,t,service,cpu_pct,rss_mb
+base_400,Baseline,400,1.5,baseline-8090,0.0,257.71
+base_400,Baseline,400,3.9,baseline-8090,142.5,293.69
+base_400,Baseline,400,6.1,baseline-8090,165.8,326.24
+base_400,Baseline,400,8.4,baseline-8090,115.3,285.82

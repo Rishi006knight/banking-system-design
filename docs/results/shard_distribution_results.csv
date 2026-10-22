@@ -1,4 +1,4 @@
 Shard_Id,Server_Node,Database_File,Total_Accounts,Processed_Operations,Percentage_Share
-bank-shard-0,node-8081,data/bank-shard-0.db,140,11024,34.9%
-bank-shard-1,node-8082,data/bank-shard-1.db,131,10002,31.6%
-bank-shard-2,node-8083,data/bank-shard-2.db,133,10594,33.5%
+bank-shard-0,node-8081,data/bank-shard-0.db,143,45046,33.9%
+bank-shard-1,node-8082,data/bank-shard-1.db,137,44498,33.5%
+bank-shard-2,node-8083,data/bank-shard-2.db,136,43382,32.6%
