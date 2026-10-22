@@ -66,3 +66,44 @@ export interface TransferResult {
   idempotencyKey?: string;
   timestamp?: number;
 }
+
+export interface TelemetryEvent {
+  id: string;
+  timestamp: number;
+  action: string;
+  status: number | string;
+  latencyMs: number;
+  node: string;
+  shard: string;
+  cacheHit?: boolean;
+  details: string;
+}
+
+export interface SystemMetrics {
+  rateLimiter: {
+    totalRequests: number;
+    allowedRequests: number;
+    rejectedRequests: number;
+    rejectionRatePercent: number;
+    activeBuckets: number;
+  };
+  keyValueStore: {
+    hits: number;
+    misses: number;
+    hitRatioPercent: number;
+    avgGetLatencyNanos: number;
+    activeKeys: number;
+  };
+  uniqueIdGenerator: {
+    totalGenerated: number;
+    generationRatePerSecond: number;
+  };
+  consistentHashRing: {
+    nodeCount: number;
+    physicalNodes: string[];
+    virtualNodesPerNode: number;
+    totalVirtualNodes: number;
+  };
+  activeServerCount: number;
+  totalServerCount: number;
+}
