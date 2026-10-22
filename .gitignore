@@ -32,12 +32,10 @@ bin/*.zip
 # Large raw metric stream dumps (>50MB)
 *samples.csv
 
-# Local SQLite databases (regenerated via scripts/init_all_dbs.py)
-data/*.db
+# SQLite runtime write-ahead log & shared memory files
 data/*.db-shm
 data/*.db-wal
 data/*.db-journal
-!data/.gitkeep
 
 # IDE & OS
 .idea/
