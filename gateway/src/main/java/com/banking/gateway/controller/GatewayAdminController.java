@@ -66,8 +66,12 @@ public class GatewayAdminController {
 
     @org.springframework.web.bind.annotation.PostMapping("/simulate/fail")
     public ResponseEntity<Map<String, Object>> simulateFail(@org.springframework.web.bind.annotation.RequestParam("serverId") String serverId) {
+        String cleanId = serverId.replace("node-", "").replace("server-", "");
         Optional<ServerNode> found = router.getAllServers().stream()
-                .filter(s -> s.getServerId().equalsIgnoreCase(serverId) || s.getUrl().contains(serverId))
+                .filter(s -> s.getServerId().equalsIgnoreCase(serverId)
+                        || s.getServerId().equalsIgnoreCase(cleanId)
+                        || s.getUrl().contains(serverId)
+                        || s.getUrl().contains(cleanId))
                 .findFirst();
         if (found.isPresent()) {
             router.markServerDown(found.get());
@@ -83,8 +87,12 @@ public class GatewayAdminController {
 
     @org.springframework.web.bind.annotation.PostMapping("/simulate/recover")
     public ResponseEntity<Map<String, Object>> simulateRecover(@org.springframework.web.bind.annotation.RequestParam("serverId") String serverId) {
+        String cleanId = serverId.replace("node-", "").replace("server-", "");
         Optional<ServerNode> found = router.getAllServers().stream()
-                .filter(s -> s.getServerId().equalsIgnoreCase(serverId) || s.getUrl().contains(serverId))
+                .filter(s -> s.getServerId().equalsIgnoreCase(serverId)
+                        || s.getServerId().equalsIgnoreCase(cleanId)
+                        || s.getUrl().contains(serverId)
+                        || s.getUrl().contains(cleanId))
                 .findFirst();
         if (found.isPresent()) {
             router.markServerHealthy(found.get());
