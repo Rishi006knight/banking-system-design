@@ -329,6 +329,7 @@ async function handleTransfer(e) {
         refreshBalance();
         loadTransactions();
         loadNotifications();
+        refreshMetrics();
         showToast(`Transferred ₹${amountInr.toFixed(2)} to ${destAccountId} successfully!`, 'success');
     } catch (err) {
         alertBox.className = 'alert-banner alert-error';
@@ -337,7 +338,7 @@ async function handleTransfer(e) {
         showToast('Transfer failed: ' + err.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.querySelector('span:first-child').textContent = 'Execute Fund Transfer';
+        btn.querySelector('span:first-child').textContent = 'Authorize & Execute Transfer';
     }
 }
 
@@ -425,6 +426,7 @@ async function handlePayBill() {
         loadBills();
         loadTransactions();
         loadNotifications();
+        refreshMetrics();
         showToast('Utility bill paid with zero duplication guarantee!', 'success');
     } catch (err) {
         alertBox.className = 'alert-banner alert-error';
@@ -582,6 +584,7 @@ async function simulateNodeFailure(serverId) {
         const friendlyName = formatClusterNodeName(serverId);
         showToast(`💥 ${friendlyName} OFFLINE! Ring dynamically shifted virtual partitions.`, 'error');
         refreshGatewayRoutes();
+        refreshMetrics();
     } catch (err) {
         showToast('Failure simulation error: ' + err.message, 'error');
     }
@@ -594,6 +597,7 @@ async function simulateNodeRecovery(serverId) {
         const friendlyName = formatClusterNodeName(serverId);
         showToast(`✅ ${friendlyName} ONLINE! Ring dynamically reassigned 150 virtual nodes.`, 'success');
         refreshGatewayRoutes();
+        refreshMetrics();
     } catch (err) {
         showToast('Recovery simulation error: ' + err.message, 'error');
     }
