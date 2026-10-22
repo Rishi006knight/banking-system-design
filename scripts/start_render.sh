@@ -5,13 +5,6 @@ echo "=== Starting Erode SSS Bank Core Services on Render ==="
 
 mkdir -p .tmp logs data
 
-# Seed databases if missing
-if [ ! -f data/bank-shard-0.db ] || [ ! -f data/bank-shard-1.db ] || [ ! -f data/bank-shard-2.db ]; then
-    echo "Seeding cluster SQLite databases..."
-    python3 scripts/init_all_dbs.py || true
-    python3 scripts/replicate_demo_accounts.py || true
-fi
-
 # Launch backend cluster shard nodes
 echo "Launching Node 1 (:8081)..."
 java -Djava.io.tmpdir=.tmp -Dserver.port=8081 -Dbanking.node-id=1 -Dbanking.shards.db-path=./data/bank-shard-0.db -Xmx128m -jar bank-service/target/bank-service-1.0.0-SNAPSHOT.jar > logs/node-8081.log 2>&1 &
