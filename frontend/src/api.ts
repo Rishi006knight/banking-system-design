@@ -10,6 +10,8 @@ import type {
   SystemMetrics
 } from './types';
 
+export const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+
 type TelemetryListener = (event: TelemetryEvent) => void;
 const telemetryListeners: TelemetryListener[] = [];
 
@@ -73,7 +75,7 @@ function recordApiTelemetry(
 
 export async function loginApi(username: string, password: string): Promise<{ token: string; user: User }> {
   const start = performance.now();
-  const res = await fetch('/auth/login', {
+  const res = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
@@ -94,7 +96,7 @@ export async function loginApi(username: string, password: string): Promise<{ to
 
 export async function getBalanceApi(accountId: string, token: string): Promise<Balance> {
   const start = performance.now();
-  const res = await fetch(`/accounts/${encodeURIComponent(accountId)}/balance`, {
+  const res = await fetch(`${API_BASE}/accounts/${encodeURIComponent(accountId)}/balance`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'X-Account-Id': accountId
@@ -105,14 +107,14 @@ export async function getBalanceApi(accountId: string, token: string): Promise<B
     `GET /accounts/${accountId}/balance`,
     res,
     start,
-    `Balance retrieved: INR ${data.balanceInr} (Cache: ${res.headers.get('x-cache-hit') === 'true' ? 'HIT' : 'MISS'})`
+    `Balance: INR ${data.balanceInr.toLocaleString('en-IN')} (Cache: ${res.headers.get('x-cache-hit') === 'true' ? 'HIT' : 'MISS'})`
   );
   return data;
 }
 
 export async function getTransactionsApi(accountId: string, token: string, size = 20): Promise<Transaction[]> {
   const start = performance.now();
-  const res = await fetch(`/accounts/${encodeURIComponent(accountId)}/transactions?page=0&size=${size}`, {
+  const res = await fetch(`${API_BASE}/accounts/${encodeURIComponent(accountId)}/transactions?page=0&size=${size}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'X-Account-Id': accountId
@@ -125,21 +127,21 @@ export async function getTransactionsApi(accountId: string, token: string, size 
 
 export async function getBillsApi(customerId: string, accountId: string, token: string): Promise<Bill[]> {
   const start = performance.now();
-  const res = await fetch(`/bills?customerId=${encodeURIComponent(customerId)}`, {
+  const res = await fetch(`${API_BASE}/bills?customerId=${encodeURIComponent(customerId)}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'X-Account-Id': accountId
     }
   });
   const data = await handleResponse<Bill[]>(res);
-  recordApiTelemetry('GET /bills', res, start, `Retrieved ${data.length} invoices`);
+  recordApiTelemetry('GET /bills', res, start, `Retrieved ${data.length} utility bills`);
   return data;
 }
 
 export async function payBillApi(billId: string, accountId: string, token: string): Promise<Bill> {
   const start = performance.now();
   const idemKey = generateUUID();
-  const res = await fetch('/billpayments', {
+  const res = await fetch(`${API_BASE}/billpayments`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -157,14 +159,14 @@ export async function payBillApi(billId: string, accountId: string, token: strin
     'POST /billpayments',
     res,
     start,
-    `Invoice ${billId} marked PAID | Idempotency: ${idemKey.slice(0, 8)}...`
+    `Invoice ${billId} settled | Idempotency: ${idemKey.slice(0, 8)}...`
   );
   return data;
 }
 
 export async function getBeneficiariesApi(customerId: string, accountId: string, token: string): Promise<Beneficiary[]> {
   const start = performance.now();
-  const res = await fetch(`/beneficiaries?customerId=${encodeURIComponent(customerId)}`, {
+  const res = await fetch(`${API_BASE}/beneficiaries?customerId=${encodeURIComponent(customerId)}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'X-Account-Id': accountId
@@ -182,7 +184,7 @@ export async function addBeneficiaryApi(
   token: string
 ): Promise<Beneficiary> {
   const start = performance.now();
-  const res = await fetch(`/beneficiaries?customerId=${encodeURIComponent(customerId)}`, {
+  const res = await fetch(`${API_BASE}/beneficiaries?customerId=${encodeURIComponent(customerId)}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -197,7 +199,7 @@ export async function addBeneficiaryApi(
 }
 
 export async function getNotificationsApi(customerId: string, accountId: string, token: string): Promise<AccountNotification[]> {
-  const res = await fetch(`/notifications?customerId=${encodeURIComponent(customerId)}`, {
+  const res = await fetch(`${API_BASE}/notifications?customerId=${encodeURIComponent(customerId)}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'X-Account-Id': accountId
@@ -216,7 +218,7 @@ export async function executeTransferApi(
   const start = performance.now();
   const amountCents = Math.round(amountInr * 100);
   const idempotencyKey = generateUUID();
-  const res = await fetch('/transfers', {
+  const res = await fetch(`${API_BASE}/transfers`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -244,8 +246,8 @@ export async function executeTransferApi(
 export async function fetchLiveSystemMetrics(): Promise<SystemMetrics | null> {
   try {
     const [gwRes, adminRes] = await Promise.all([
-      fetch('/gateway/metrics').then((r) => (r.ok ? r.json() : null)).catch(() => null),
-      fetch('/admin/metrics').then((r) => (r.ok ? r.json() : null)).catch(() => null)
+      fetch(`${API_BASE}/gateway/metrics`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch(`${API_BASE}/admin/metrics`).then((r) => (r.ok ? r.json() : null)).catch(() => null)
     ]);
 
     if (!adminRes && !gwRes) return null;

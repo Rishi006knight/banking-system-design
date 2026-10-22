@@ -39,11 +39,28 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Base Container */
-.app-container {
-  max-width: 1240px;
+/* Base Container & Side Layout */
+.bank-app-layout {
+  display: flex;
+  max-width: 1680px;
   margin: 0 auto;
   padding: 24px 20px 48px;
+  gap: 24px;
+  align-items: flex-start;
+  min-height: 100vh;
+  position: relative;
+}
+
+.bank-main-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.app-container {
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -811,19 +828,49 @@ body {
 }
 
 /* ==========================================================================
-   Live Component Architecture Telemetry & Reactive Stream HUD
+   Live Component Architecture Telemetry - Side of Screen Panel
    ========================================================================== */
-.telemetry-hud {
+.telemetry-side-panel {
+  width: 420px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
   background: rgba(13, 20, 36, 0.95);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
   border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: var(--card-radius);
-  padding: 20px 24px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
   gap: 16px;
-  animation: slideIn 0.3s ease;
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.telemetry-side-panel::-webkit-scrollbar {
+  width: 5px;
+}
+.telemetry-side-panel::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.25);
+  border-radius: 4px;
+}
+
+@media (max-width: 1200px) {
+  .bank-app-layout {
+    flex-direction: column;
+  }
+  .telemetry-side-panel {
+    width: 100%;
+    position: static;
+    max-height: none;
+  }
 }
 
 .telemetry-top-bar {
@@ -831,14 +878,16 @@ body {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 12px;
 }
 
 .telemetry-title {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 1.05rem;
+  gap: 8px;
+  font-size: 0.95rem;
   font-weight: 700;
   color: #38bdf8;
   letter-spacing: 0.02em;
@@ -851,9 +900,9 @@ body {
   background: rgba(16, 185, 129, 0.15);
   color: #34d399;
   border: 1px solid rgba(16, 185, 129, 0.3);
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: 20px;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -861,7 +910,7 @@ body {
 .telemetry-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .btn-telemetry-toggle {
@@ -885,38 +934,26 @@ body {
   transform: translateY(-1px);
 }
 
-.telemetry-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-}
-
-@media (max-width: 1024px) {
-  .telemetry-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (max-width: 640px) {
-  .telemetry-grid {
-    grid-template-columns: 1fr;
-  }
+.telemetry-side-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .telemetry-component-card {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 10px;
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   transition: all 0.2s;
 }
 
 .telemetry-component-card:hover {
   border-color: rgba(56, 189, 248, 0.4);
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(15, 23, 42, 0.9);
 }
 
 .comp-header {
@@ -926,7 +963,7 @@ body {
 }
 
 .comp-num {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 800;
   color: #38bdf8;
   background: rgba(56, 189, 248, 0.12);
@@ -936,13 +973,13 @@ body {
 }
 
 .comp-name {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: #f1f5f9;
 }
 
 .comp-metric {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 800;
   font-family: var(--font-mono);
   color: #38bdf8;
@@ -955,7 +992,7 @@ body {
 
 .comp-nodes-row {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   margin-top: 4px;
   flex-wrap: wrap;
 }
@@ -978,14 +1015,14 @@ body {
   animation: pulse-dot 1s ease;
 }
 
-/* Event Stream Console */
+/* Event Stream Console on Side */
 .telemetry-console-wrapper {
   background: #040711;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
-  padding: 12px 14px;
+  padding: 12px;
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1011,11 +1048,11 @@ body {
 }
 
 .console-stream {
-  max-height: 140px;
+  max-height: 220px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
 .console-stream::-webkit-scrollbar {
@@ -1028,40 +1065,50 @@ body {
 
 .log-entry {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  line-height: 1.4;
-  padding: 2px 4px;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.02);
   border-radius: 4px;
+  border-left: 2px solid #38bdf8;
 }
 
 .log-entry:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.log-header-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
 }
 
 .log-time {
   color: #64748b;
-  flex-shrink: 0;
 }
 
 .log-action {
   color: #38bdf8;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.log-node {
-  color: #a78bfa;
-  flex-shrink: 0;
+  font-weight: 700;
 }
 
 .log-latency {
   color: #34d399;
-  flex-shrink: 0;
+}
+
+.log-node-line {
+  display: flex;
+  gap: 6px;
+  font-size: 0.68rem;
+  color: #a78bfa;
 }
 
 .log-details {
   color: #cbd5e1;
+  font-size: 0.72rem;
   word-break: break-word;
 }
+
 

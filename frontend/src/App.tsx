@@ -385,197 +385,57 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="app-container">
-      {/* Brand Navigation Header */}
-      <header className="bank-header">
-        <div className="brand-wrapper">
-          <div className="brand-monogram">ESSS</div>
-          <div className="brand-info">
-            <h1>Erode SSS Bank</h1>
-            <div className="brand-sub">Premier Commercial Digital Banking</div>
-          </div>
-        </div>
-
-        <div className="header-badges">
-          <div className="sec-badge">
-            <span className="sec-dot"></span>
-            256-Bit SSL Encrypted
-          </div>
-
-          <button
-            className="btn-telemetry-toggle"
-            onClick={() => setShowTelemetry(!showTelemetry)}
-            title="Toggle Live Component Working Telemetry"
-          >
-            <span>📡</span> {showTelemetry ? 'Live Telemetry: ACTIVE' : 'Show Telemetry'}
-          </button>
-        </div>
-
-        {user && (
-          <div className="user-profile-bar">
-            <div className="user-avatar">{user.name.charAt(0)}</div>
-            <div className="user-meta">
-              <div className="user-name">{user.name}</div>
-              <div className="user-acc-num">{user.accountId}</div>
+    <div className="bank-app-layout">
+      {/* Left Column: Commercial Banking Content */}
+      <div className="bank-main-content">
+        {/* Brand Navigation Header */}
+        <header className="bank-header">
+          <div className="brand-wrapper">
+            <div className="brand-monogram">ESSS</div>
+            <div className="brand-info">
+              <h1>Erode SSS Bank</h1>
+              <div className="brand-sub">Premier Commercial Digital Banking</div>
             </div>
-            <button className="btn-signout" onClick={handleLogout} title="Sign Out of NetBanking">
-              Sign Out
+          </div>
+
+          <div className="header-badges">
+            <div className="sec-badge">
+              <span className="sec-dot"></span>
+              256-Bit SSL Encrypted
+            </div>
+
+            <button
+              className="btn-telemetry-toggle"
+              onClick={() => setShowTelemetry(!showTelemetry)}
+              title="Toggle Live Component Working Telemetry on Side of Screen"
+            >
+              <span>📡</span> {showTelemetry ? 'Telemetry: SIDEBAR ON' : 'Show Telemetry Sidebar'}
             </button>
           </div>
-        )}
-      </header>
 
-      {/* Global Status Banner */}
-      {statusMessage && (
-        <div className={`alert-banner ${statusMessage.type === 'success' ? 'alert-success' : 'alert-error'}`}>
-          <span>{statusMessage.type === 'success' ? '✓' : '⚠'}</span>
-          <span>{statusMessage.text}</span>
-        </div>
-      )}
-
-      {/* Live Component Architecture Telemetry & Reaction Stream */}
-      {showTelemetry && (
-        <section className="telemetry-hud">
-          <div className="telemetry-top-bar">
-            <div className="telemetry-title">
-              <span>⚡</span> Live Component Working Telemetry & Reactive Stream
-            </div>
-            <div className="telemetry-actions">
-              <div className="telemetry-badge-live">
-                <span className="sec-dot"></span> 5 Microservice Components Connected
+          {user && (
+            <div className="user-profile-bar">
+              <div className="user-avatar">{user.name.charAt(0)}</div>
+              <div className="user-meta">
+                <div className="user-name">{user.name}</div>
+                <div className="user-acc-num">{user.accountId}</div>
               </div>
-              <button
-                className="chip-btn"
-                style={{ padding: '4px 10px' }}
-                onClick={() => setTelemetryEvents([])}
-              >
-                Clear Stream
+              <button className="btn-signout" onClick={handleLogout} title="Sign Out of NetBanking">
+                Sign Out
               </button>
             </div>
+          )}
+        </header>
+
+        {/* Global Status Banner */}
+        {statusMessage && (
+          <div className={`alert-banner ${statusMessage.type === 'success' ? 'alert-success' : 'alert-error'}`}>
+            <span>{statusMessage.type === 'success' ? '✓' : '⚠'}</span>
+            <span>{statusMessage.text}</span>
           </div>
+        )}
 
-          {/* 5 Core Banking Components Grid */}
-          <div className="telemetry-grid">
-            {/* 1. Consistent Hash Ring */}
-            <div className="telemetry-component-card">
-              <div className="comp-header">
-                <span className="comp-num">COMP 1</span>
-                <span className="comp-name">Consistent Hash Ring</span>
-              </div>
-              <div className="comp-metric">
-                {systemMetrics?.activeServerCount ?? 3} / {systemMetrics?.totalServerCount ?? 3} Nodes
-              </div>
-              <div className="comp-sub">450 Virtual Ring Slots (Murmur3)</div>
-              <div className="comp-nodes-row">
-                <span className={`node-chip ${lastActiveNode.includes('8081') || lastActiveNode.includes('shard-0') ? 'active-pulse' : ''}`}>
-                  Node 1 (:8081)
-                </span>
-                <span className={`node-chip ${lastActiveNode.includes('8082') || lastActiveNode.includes('shard-1') ? 'active-pulse' : ''}`}>
-                  Node 2 (:8082)
-                </span>
-                <span className={`node-chip ${lastActiveNode.includes('8083') || lastActiveNode.includes('shard-2') ? 'active-pulse' : ''}`}>
-                  Node 3 (:8083)
-                </span>
-              </div>
-            </div>
 
-            {/* 2. Token Bucket Rate Limiter */}
-            <div className="telemetry-component-card">
-              <div className="comp-header">
-                <span className="comp-num">COMP 2</span>
-                <span className="comp-name">Token Bucket Limiter</span>
-              </div>
-              <div className="comp-metric" style={{ color: '#10b981' }}>
-                {systemMetrics?.rateLimiter?.allowedRequests ?? 35} Allowed
-              </div>
-              <div className="comp-sub">
-                {systemMetrics?.rateLimiter?.rejectedRequests ?? 0} Throttled &bull;{' '}
-                {systemMetrics?.rateLimiter?.activeBuckets ?? 3} Active Buckets
-              </div>
-              <div className="comp-sub" style={{ fontSize: '0.68rem', color: '#64748b' }}>
-                Strict: 5/m | Mod: 30/m | Len: 120/m
-              </div>
-            </div>
-
-            {/* 3. Database Sharding & Saga */}
-            <div className="telemetry-component-card">
-              <div className="comp-header">
-                <span className="comp-num">COMP 3</span>
-                <span className="comp-name">Shards & Saga</span>
-              </div>
-              <div className="comp-metric" style={{ color: '#38bdf8' }}>
-                3 Partitions
-              </div>
-              <div className="comp-sub">ACID Local & 2-Phase Saga</div>
-              <div className="comp-sub" style={{ fontSize: '0.68rem', color: '#10b981' }}>
-                Balanced across 3 SQLite nodes
-              </div>
-            </div>
-
-            {/* 4. In-Memory KV Cache */}
-            <div className="telemetry-component-card">
-              <div className="comp-header">
-                <span className="comp-num">COMP 4</span>
-                <span className="comp-name">KV Store Cache</span>
-              </div>
-              <div className="comp-metric" style={{ color: '#fbbf24' }}>
-                {(systemMetrics?.keyValueStore?.hitRatioPercent ?? 88.5).toFixed(1)}% Hit
-              </div>
-              <div className="comp-sub">
-                Latency: &lt; 0.4 ms &bull; Keys: {systemMetrics?.keyValueStore?.activeKeys ?? 28}
-              </div>
-              <div className="comp-sub" style={{ fontSize: '0.68rem', color: '#64748b' }}>
-                TTL 60s snapshots & LRU Eviction
-              </div>
-            </div>
-
-            {/* 5. Distributed Snowflake ID Generator */}
-            <div className="telemetry-component-card">
-              <div className="comp-header">
-                <span className="comp-num">COMP 5</span>
-                <span className="comp-name">Snowflake IDs</span>
-              </div>
-              <div className="comp-metric" style={{ color: '#a78bfa' }}>
-                {systemMetrics?.uniqueIdGenerator?.totalGenerated ?? 72} Generated
-              </div>
-              <div className="comp-sub">64-Bit Time-Ordered IDs</div>
-              <div className="comp-sub" style={{ fontSize: '0.68rem', color: '#64748b' }}>
-                TRF-106... collision-free
-              </div>
-            </div>
-          </div>
-
-          {/* Real-time Component Reaction Stream Console */}
-          <div className="telemetry-console-wrapper">
-            <div className="console-header-row">
-              <div className="console-title">
-                <span>▶</span> Live Component Reaction Log (Updates when you click & interact)
-              </div>
-              <div style={{ color: '#64748b', fontSize: '0.72rem' }}>
-                {telemetryEvents.length} events recorded
-              </div>
-            </div>
-
-            <div className="console-stream">
-              {telemetryEvents.length === 0 ? (
-                <div style={{ color: '#64748b', padding: '6px' }}>
-                  No interaction events captured yet. Click buttons to see components react!
-                </div>
-              ) : (
-                telemetryEvents.map((evt) => (
-                  <div key={evt.id} className="log-entry">
-                    <span className="log-time">[{formatTimeOnly(evt.timestamp)}]</span>
-                    <span className="log-action">{evt.action}</span>
-                    <span className="log-node">{evt.node}</span>
-                    <span className="log-latency">{evt.latencyMs}ms</span>
-                    <span className="log-details">{evt.details}</span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* View 1: Customer Login Portal */}
       {!user ? (
@@ -987,6 +847,152 @@ export const App: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+      </div>
+
+      {/* Live Component Architecture Telemetry - Side of Screen Panel */}
+      {showTelemetry && (
+        <aside className="telemetry-side-panel">
+          <div className="telemetry-top-bar">
+            <div className="telemetry-title">
+              <span>⚡</span> Architecture Telemetry
+            </div>
+            <div className="telemetry-actions">
+              <span className="telemetry-badge-live">Live</span>
+              <button
+                className="chip-btn"
+                style={{ padding: '3px 8px', fontSize: '0.72rem' }}
+                onClick={() => setTelemetryEvents([])}
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <div className="telemetry-side-stack">
+            {/* 1. Consistent Hash Ring */}
+            <div className="telemetry-component-card">
+              <div className="comp-header">
+                <span className="comp-num">COMP 1</span>
+                <span className="comp-name">Consistent Hash Ring</span>
+              </div>
+              <div className="comp-metric">
+                {systemMetrics?.activeServerCount ?? 3} / {systemMetrics?.totalServerCount ?? 3} Nodes
+              </div>
+              <div className="comp-sub">450 Virtual Ring Slots (Murmur3)</div>
+              <div className="comp-nodes-row">
+                <span className={`node-chip ${lastActiveNode.includes('8081') || lastActiveNode.includes('shard-0') ? 'active-pulse' : ''}`}>
+                  Node 1 (:8081)
+                </span>
+                <span className={`node-chip ${lastActiveNode.includes('8082') || lastActiveNode.includes('shard-1') ? 'active-pulse' : ''}`}>
+                  Node 2 (:8082)
+                </span>
+                <span className={`node-chip ${lastActiveNode.includes('8083') || lastActiveNode.includes('shard-2') ? 'active-pulse' : ''}`}>
+                  Node 3 (:8083)
+                </span>
+              </div>
+            </div>
+
+            {/* 2. Token Bucket Rate Limiter */}
+            <div className="telemetry-component-card">
+              <div className="comp-header">
+                <span className="comp-num">COMP 2</span>
+                <span className="comp-name">Token Bucket Limiter</span>
+              </div>
+              <div className="comp-metric" style={{ color: '#10b981' }}>
+                {systemMetrics?.rateLimiter?.allowedRequests ?? 35} Allowed
+              </div>
+              <div className="comp-sub">
+                {systemMetrics?.rateLimiter?.rejectedRequests ?? 0} Throttled &bull;{' '}
+                {systemMetrics?.rateLimiter?.activeBuckets ?? 3} Active Buckets
+              </div>
+              <div className="comp-sub" style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                Strict: 5/m | Mod: 30/m | Len: 120/m
+              </div>
+            </div>
+
+            {/* 3. Database Sharding & Saga */}
+            <div className="telemetry-component-card">
+              <div className="comp-header">
+                <span className="comp-num">COMP 3</span>
+                <span className="comp-name">Shards & Saga</span>
+              </div>
+              <div className="comp-metric" style={{ color: '#38bdf8' }}>
+                3 Partitions
+              </div>
+              <div className="comp-sub">ACID Local & 2-Phase Saga</div>
+              <div className="comp-sub" style={{ fontSize: '0.68rem', color: '#10b981' }}>
+                Balanced across 3 SQLite nodes
+              </div>
+            </div>
+
+            {/* 4. In-Memory KV Cache */}
+            <div className="telemetry-component-card">
+              <div className="comp-header">
+                <span className="comp-num">COMP 4</span>
+                <span className="comp-name">KV Store Cache</span>
+              </div>
+              <div className="comp-metric" style={{ color: '#fbbf24' }}>
+                {(systemMetrics?.keyValueStore?.hitRatioPercent ?? 88.5).toFixed(1)}% Hit
+              </div>
+              <div className="comp-sub">
+                Latency: &lt; 0.4 ms &bull; Keys: {systemMetrics?.keyValueStore?.activeKeys ?? 28}
+              </div>
+              <div className="comp-sub" style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                TTL 60s snapshots & LRU Eviction
+              </div>
+            </div>
+
+            {/* 5. Distributed Snowflake ID Generator */}
+            <div className="telemetry-component-card">
+              <div className="comp-header">
+                <span className="comp-num">COMP 5</span>
+                <span className="comp-name">Snowflake IDs</span>
+              </div>
+              <div className="comp-metric" style={{ color: '#a78bfa' }}>
+                {systemMetrics?.uniqueIdGenerator?.totalGenerated ?? 72} Generated
+              </div>
+              <div className="comp-sub">64-Bit Time-Ordered IDs</div>
+              <div className="comp-sub" style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                TRF-106... collision-free
+              </div>
+            </div>
+          </div>
+
+          {/* Event Stream Console on Side */}
+          <div className="telemetry-console-wrapper">
+            <div className="console-header-row">
+              <div className="console-title">
+                <span>▶</span> Live Component Reaction Log
+              </div>
+              <div style={{ color: '#64748b', fontSize: '0.7rem' }}>
+                {telemetryEvents.length} events
+              </div>
+            </div>
+
+            <div className="console-stream">
+              {telemetryEvents.length === 0 ? (
+                <div style={{ color: '#64748b', padding: '6px' }}>
+                  No events yet. Click buttons to see components react!
+                </div>
+              ) : (
+                telemetryEvents.map((evt) => (
+                  <div key={evt.id} className="log-entry">
+                    <div className="log-header-line">
+                      <span className="log-action">{evt.action}</span>
+                      <span className="log-latency">{evt.latencyMs}ms</span>
+                    </div>
+                    <div className="log-node-line">
+                      <span>[{formatTimeOnly(evt.timestamp)}]</span>
+                      <span>{evt.node}</span>
+                    </div>
+                    <div className="log-details">{evt.details}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </aside>
       )}
     </div>
   );
