@@ -1,681 +1,934 @@
+import { api } from './api.js';
 import { HashRingVisualizer } from './components/ring.js';
+import { TokenBucketVisualizer } from './components/token-bucket.js';
 import { SagaVisualizer } from './components/saga.js';
+import { KvStoreVisualizer } from './components/kv-store.js';
+import { SnowflakeVisualizer } from './components/snowflake.js';
 import { EventLogStream } from './components/event-log.js';
-class BankingApp {
+
+class ErodeBankingApp {
   constructor() {
-    this.apiUrl = this.resolveApiUrl();
     this.token = localStorage.getItem('esss_token');
     this.user = JSON.parse(localStorage.getItem('esss_user') || 'null');
-    this.activeTab = 'balance';
+    if (this.token) api.setToken(this.token);
+
+    this.telemetryEnabled = localStorage.getItem('esss_telemetry_enabled') !== 'false';
+    this.telemetryPanelEl = document.getElementById('telemetry-panel');
+    this.appContainerEl = document.getElementById('app-container');
+
     this.killedNodes = new Set();
     this.hasFourthShard = false;
-    this.sparklineData = Array(30).fill(1.5);
-    this.isOffline = false;
+    this.activeTab = 'accounts';
+
+    // State per user
+    this.currentBalance = 25420.50;
+    this.transactions = [];
+    this.bills = [];
+
+    // Components
     this.ring = null;
+    this.tokenBucket = null;
     this.saga = null;
+    this.kvStore = null;
+    this.snowflake = null;
     this.eventLog = null;
-    this.tokenBuckets = {
-      login: { capacity: 5, tokens: 5, max: 5 },
-      transfer: { capacity: 30, tokens: 30, max: 30 },
-      enquiry: { capacity: 120, tokens: 120, max: 120 }
-    };
-    this.kvKeys = [
-      { key: 'session:aarav.sharma1', ttl: 890, type: 'SESSION' },
-      { key: 'bal:ACC-0000001', ttl: 54, type: 'BALANCE' },
-      { key: 'idem:TRF-9021', ttl: 86320, type: 'IDEMPOTENCY' },
-      { key: 'otp:ACC-0000001', ttl: 240, type: 'AUTH' },
-      { key: 'rate:client-127.0.0.1', ttl: 42, type: 'RATELIMIT' }
-    ];
+
     this.init();
   }
-  resolveApiUrl() {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('gateway')) {
-      return urlParams.get('gateway').replace(/\/$/, '');
-    }
-    if (localStorage.getItem('GATEWAY_URL')) {
-      return localStorage.getItem('GATEWAY_URL').replace(/\/$/, '');
-    }
-    if (window.GATEWAY_URL) {
-      return window.GATEWAY_URL.replace(/\/$/, '');
-    }
-    if (window.location.port === '8080' || window.location.hostname.includes('onrender.com')) {
-      return window.location.origin;
-    }
-    return 'http://localhost:8080';
-  }
+
   init() {
-    const ringEl = document.getElementById('hash-ring-container');
-    if (ringEl) this.ring = new HashRingVisualizer(ringEl);
-    const sagaEl = document.getElementById('saga-container');
-    if (sagaEl) this.saga = new SagaVisualizer(sagaEl);
-    const logEl = document.getElementById('event-log-container');
-    if (logEl) this.eventLog = new EventLogStream(logEl);
+    this.initComponents();
+
+    api.onOfflineStateChange = (offline) => {
+      const banner = document.getElementById('offline-banner');
+      if (banner) banner.style.display = offline ? 'block' : 'none';
+    };
+
+
+    this.setupTelemetryToggle();
+    this.wireEvents();
+    this.renderSessionState();
+
+    this.pollMetrics();
+    this.metricsTimer = setInterval(() => this.pollMetrics(), 1000);
+
     if (this.eventLog) {
       this.eventLog.addEvent({
         action: 'SYSTEM_BOOT',
-        status: 200,
-        latencyMs: 1,
-        node: 'gateway:8080',
-        shard: 'cluster-mesh',
-        details: 'API Gateway initialized with 3 cluster shard nodes and 450 virtual ring slots'
+        details: 'Erode SSS Bank Core Cluster online · 3 Shards · 450 vnodes · Edge Limiter active'
       });
     }
-    this.wireEvents();
-    this.renderAuthState();
-    this.pollMetrics();
-    this.metricsTimer = setInterval(() => this.pollMetrics(), 1000);
-    this.ttlTimer = setInterval(() => this.updateTtlCountdowns(), 1000);
   }
-  async apiFetch(endpoint, options = {}) {
-    const start = performance.now();
-    const headers = new Headers(options.headers || {});
-    if (this.token && !headers.has('Authorization')) {
-      headers.set('Authorization', `Bearer ${this.token}`);
-    }
-    const fullUrl = this.apiUrl + endpoint;
-    try {
-      const response = await fetch(fullUrl, {
-        ...options,
-        headers
-      });
-      const latency = Math.round(performance.now() - start);
-      const servedBy = response.headers.get('X-Served-By') || 'node:8082';
-      const shard = response.headers.get('X-Shard') || '1';
-      const cacheHit = response.headers.get('X-Cache-Hit') === 'true' || response.headers.get('X-Cache-Hit') === 'HIT';
-      const retryAfter = response.headers.get('Retry-After');
-      this.updateTraceStrip({
-        gateway: 'gateway:8080',
-        node: servedBy,
-        shard: shard,
-        cacheHit: cacheHit,
-        latency: latency,
-        status: response.status
-      });
-      this.pushSparklineSample(latency);
-      if (response.status === 429) {
-        this.handleRateLimitDrop(retryAfter || 60, endpoint);
-        const errJson = await response.json().catch(() => ({}));
-        throw new Error(errJson.error || `Rate limited — retry in ${retryAfter || 60}s`);
+
+  initComponents() {
+    const ringEl = document.getElementById('card-hash-ring');
+    if (ringEl) this.ring = new HashRingVisualizer(ringEl);
+
+    const tbEl = document.getElementById('card-token-bucket');
+    if (tbEl) this.tokenBucket = new TokenBucketVisualizer(tbEl);
+
+    const sagaEl = document.getElementById('card-shards-saga');
+    if (sagaEl) this.saga = new SagaVisualizer(sagaEl);
+
+    const kvEl = document.getElementById('card-kv-store');
+    if (kvEl) this.kvStore = new KvStoreVisualizer(kvEl);
+
+    const sfEl = document.getElementById('card-snowflake-id');
+    if (sfEl) this.snowflake = new SnowflakeVisualizer(sfEl);
+
+    const logEl = document.getElementById('card-event-log');
+    if (logEl) this.eventLog = new EventLogStream(logEl);
+  }
+
+  setupTelemetryToggle() {
+    const btn = document.getElementById('btn-telemetry-toggle');
+    if (!btn) return;
+
+    this.applyTelemetryState(this.telemetryEnabled);
+
+    btn.addEventListener('click', () => {
+      this.telemetryEnabled = !this.telemetryEnabled;
+      localStorage.setItem('esss_telemetry_enabled', String(this.telemetryEnabled));
+      this.applyTelemetryState(this.telemetryEnabled);
+    });
+  }
+
+  applyTelemetryState(enabled) {
+    const btn = document.getElementById('btn-telemetry-toggle');
+    const indicator = btn?.querySelector('.telemetry-pill-indicator');
+
+    if (enabled) {
+      if (btn) btn.classList.add('is-active');
+      if (indicator) indicator.textContent = '● ON';
+      this.appContainerEl?.classList.remove('telemetry-off');
+      if (!document.getElementById('telemetry-panel') && this.telemetryPanelEl) {
+        this.appContainerEl?.appendChild(this.telemetryPanelEl);
       }
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        throw new Error(errJson.error || errJson.message || `HTTP ${response.status}`);
+    } else {
+      if (btn) btn.classList.remove('is-active');
+      if (indicator) indicator.textContent = 'OFF';
+      this.appContainerEl?.classList.add('telemetry-off');
+      if (this.telemetryPanelEl && this.telemetryPanelEl.parentNode) {
+        this.telemetryPanelEl.remove();
       }
-      const data = await response.json();
-      return { data, headers: response.headers, latency };
-    } catch (err) {
-      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        this.setOfflineState(true);
-      }
-      throw err;
-    }
-  }
-  updateTraceStrip({ gateway, node, shard, cacheHit, latency, status }) {
-    const stripEl = document.getElementById('global-trace-strip');
-    if (!stripEl) return;
-    stripEl.style.display = 'flex';
-    stripEl.innerHTML = `
-      <span>→ <strong>${gateway}</strong></span>
-      <span style="color: #9aa3b2;">·</span>
-      <span>routed → <strong style="color: #1f6fd1;">${node}</strong></span>
-      <span style="color: #9aa3b2;">·</span>
-      <span>shard: <strong>${shard}</strong></span>
-      <span style="color: #9aa3b2;">·</span>
-      <span>cache: <strong style="color: ${cacheHit ? '#2e9e5b' : '#e8832a'};">${cacheHit ? 'HIT' : 'MISS'}</strong></span>
-      <span style="color: #9aa3b2;">·</span>
-      <span style="color: #2e9e5b; font-weight: 700;">${latency}ms</span>
-      ${status === 429 ? `<span style="color: #d64545; font-weight: 800; margin-left: 8px;">[429 THROTTLED]</span>` : ''}
-    `;
-  }
-  pushSparklineSample(val) {
-    this.sparklineData.push(val);
-    if (this.sparklineData.length > 30) this.sparklineData.shift();
-    this.renderSparkline();
-  }
-  renderSparkline() {
-    const el = document.getElementById('latency-sparkline');
-    if (!el) return;
-    const max = Math.max(...this.sparklineData, 20);
-    const w = 180;
-    const h = 28;
-    const step = w / (this.sparklineData.length - 1);
-    const points = this.sparklineData
-      .map((val, idx) => {
-        const x = (idx * step).toFixed(1);
-        const y = (h - (val / max) * (h - 4)).toFixed(1);
-        return `${x},${y}`;
-      })
-      .join(' ');
-    el.innerHTML = `
-      <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-        <polyline fill="none" stroke="#1f6fd1" stroke-width="1.8" points="${points}" stroke-linecap="round" stroke-linejoin="round" />
-      </svg>
-    `;
-  }
-  setOfflineState(offline) {
-    this.isOffline = offline;
-    const banner = document.getElementById('offline-banner');
-    if (banner) {
-      banner.style.display = offline ? 'block' : 'none';
     }
   }
+
   async pollMetrics() {
     try {
-      const res = await fetch(`${this.apiUrl}/admin/metrics`, { method: 'GET' });
-      if (!res.ok) throw new Error('Metrics endpoint unavailable');
-      const data = await res.json();
-      this.setOfflineState(false);
-      this.updateMetricsUI(data);
+      const { data } = await api.get('/admin/metrics');
+      if (data) {
+        this.updateMetricsUI(data);
+      }
     } catch {
-      this.setOfflineState(true);
-      this.updateMetricsUI({
-        rateLimiter: { totalRequests: 142, allowedRequests: 138, rejectedRequests: 4, activeBuckets: 3 },
-        keyValueStore: { hitRatioPercent: 88.5, activeKeys: 28, avgGetLatencyNanos: 420000 },
-        uniqueIdGenerator: { totalGenerated: 180240, generationRatePerSecond: 12 },
-        consistentHashRing: { nodeCount: this.hasFourthShard ? 4 : 3, totalVirtualNodes: this.hasFourthShard ? 600 : 450 }
-      });
+      // Background poll silently ignored
     }
   }
+
   updateMetricsUI(metrics) {
     if (!metrics) return;
-    const rl = metrics.rateLimiter || {};
-    this.animateNumber('metric-rl-allowed', rl.allowedRequests ?? 138);
-    this.animateNumber('metric-rl-throttled', rl.rejectedRequests ?? 0);
-    const chr = metrics.consistentHashRing || {};
-    const nodesCount = chr.nodeCount ?? (this.hasFourthShard ? 4 : 3);
-    const vnodes = chr.totalVirtualNodes ?? (nodesCount * 150);
-    this.animateNumber('metric-ring-nodes', nodesCount);
-    this.animateNumber('metric-ring-vnodes', vnodes);
-    const kv = metrics.keyValueStore || {};
-    const hitRatio = (kv.hitRatioPercent ?? 88.5).toFixed(1);
-    this.animateNumber('metric-kv-hitratio', hitRatio, '%');
-    this.animateNumber('metric-kv-keys', kv.activeKeys ?? 28);
-    const latencyMs = ((kv.avgGetLatencyNanos ?? 400000) / 1000000).toFixed(2);
-    const latEl = document.getElementById('metric-kv-latency');
-    if (latEl) latEl.textContent = `${latencyMs} ms`;
-    const gaugeEl = document.getElementById('kv-gauge-fill');
-    if (gaugeEl) gaugeEl.style.width = `${Math.min(100, Math.max(0, hitRatio))}%`;
-    const sf = metrics.uniqueIdGenerator || {};
-    this.animateNumber('metric-sf-count', sf.totalGenerated ?? 180240);
+    if (metrics.rateLimiter && this.tokenBucket) {
+      this.tokenBucket.updateMetrics(
+        metrics.rateLimiter.allowedRequests,
+        metrics.rateLimiter.rejectedRequests
+      );
+    }
+    if (metrics.keyValueStore && this.kvStore) {
+      this.kvStore.updateMetrics(
+        metrics.keyValueStore.hitRatioPercent,
+        metrics.keyValueStore.avgGetLatencyNanos
+      );
+    }
+    if (metrics.uniqueIdGenerator && this.snowflake) {
+      this.snowflake.updateMetrics(metrics.uniqueIdGenerator.totalGenerated);
+    }
+    if (metrics.shards && this.saga) {
+      this.saga.updateShards(metrics.shards);
+    }
   }
-  animateNumber(elementId, targetValue, suffix = '') {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-    const current = el.getAttribute('data-value');
-    if (current === String(targetValue)) return;
-    el.setAttribute('data-value', targetValue);
-    el.classList.add('num-changing');
-    el.textContent = `${targetValue}${suffix}`;
+
+
+  showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+      <div>${message}</div>
+      <button class="toast-close" aria-label="Close notification">✕</button>
+    `;
+    toast.querySelector('.toast-close').addEventListener('click', () => toast.remove());
+    container.appendChild(toast);
     setTimeout(() => {
-      el.classList.remove('num-changing');
-    }, 250);
+      if (toast.parentNode) toast.remove();
+    }, 4500);
   }
-  updateTtlCountdowns() {
-    this.kvKeys.forEach(k => {
-      if (k.ttl > 0) k.ttl -= 1;
-    });
-    const el = document.getElementById('kv-keys-list');
-    if (!el) return;
-    el.innerHTML = this.kvKeys.map(k => {
-      const mins = Math.floor(k.ttl / 60);
-      const secs = k.ttl % 60;
-      const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-      return `
-        <div class="kv-key-pill" style="
-          display: flex; justify-content: space-between; align-items: center; padding: 4px 8px;
-          background: #ffffff; border: 1px solid #e5e7eb; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 10px; margin-bottom: 3px;
-        ">
-          <span style="color: #12305f; font-weight: 600;">${k.key}</span>
-          <span style="color: #2e9e5b; font-weight: 700;">TTL: ${timeStr}</span>
-        </div>
-      `;
-    }).join('');
+
+  getShardForAccount(accountId) {
+    if (!accountId) return '0';
+    if (accountId.includes('2')) return '1';
+    if (accountId.includes('4')) return '2';
+    return '0';
   }
-  handleRateLimitDrop(retrySeconds, endpoint) {
-    const pill = document.getElementById('rate-limit-pill');
-    if (pill) {
-      pill.style.display = 'inline-block';
-      pill.textContent = `Retry-After: ${retrySeconds}s`;
-      setTimeout(() => { pill.style.display = 'none'; }, retrySeconds * 1000);
-    }
-    if (this.eventLog) {
-      this.eventLog.addEvent({
-        action: 'RATE_LIMIT_DROP',
-        status: 429,
-        latencyMs: 0,
-        node: 'gateway:8080',
-        shard: 'token-bucket',
-        details: `⛔ HTTP 429 Throttle on ${endpoint}. Rate limit threshold exceeded. Retry after ${retrySeconds}s.`
-      });
-    }
-    const bar = document.getElementById('bucket-bar-login');
-    if (bar) {
-      bar.classList.add('bar-flash-red');
-      setTimeout(() => bar.classList.remove('bar-flash-red'), 1200);
-    }
+
+  getNodeForShard(shardId) {
+    const map = { '0': 'node:8081', '1': 'node:8082', '2': 'node:8083' };
+    return map[String(shardId)] || 'node:8081';
   }
+
   async handleLogin(username, password) {
-    const submitBtn = document.getElementById('btn-login-submit');
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Authenticating...';
+    const btn = document.getElementById('btn-login-submit');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Signing In...';
     }
+
+    if (this.tokenBucket && !this.tokenBucket.tryConsume('login')) {
+      const retry = this.tokenBucket.retryAfterSec || 12;
+      if (this.eventLog) {
+        this.eventLog.addEvent({
+          action: 'LOGIN_THROTTLED',
+          details: `429 Too Many Requests · IP login bucket exhausted · Retry-After: ${retry}s`
+        });
+      }
+      this.showToast(`Rate limit exceeded (5 logins/min) · retry in ${retry}s`, 'error');
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+      return;
+    }
+
     try {
-      const { data, headers, latency } = await this.apiFetch('/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
+      const { data, headers, latency } = await api.post('/auth/login', { username, password });
       this.token = data.token;
       this.user = {
-        id: data.customerId || data.userId || '1',
-        username: username,
+        id: data.customerId || '1',
+        username,
         name: data.name || (username.startsWith('aarav') ? 'Aarav Sharma' : username.startsWith('diya') ? 'Diya Patel' : 'Kavya Nair'),
         accountId: data.accountId || 'ACC-0000001'
       };
+      api.setToken(this.token);
       localStorage.setItem('esss_token', this.token);
       localStorage.setItem('esss_user', JSON.stringify(this.user));
+
       if (this.eventLog) {
         this.eventLog.addEvent({
           action: 'LOGIN_ALLOWED',
-          status: 200,
-          latencyMs: latency,
-          node: headers.get('X-Served-By') || 'node:8081',
-          shard: headers.get('X-Shard') || '0',
-          details: `Authenticated customer ${username} (${this.user.accountId}). Session token generated.`
+          details: `Authenticated ${this.user.name} (${this.user.accountId}) · Session JWT issued`
         });
       }
-      this.kvKeys.unshift({ key: `session:${this.token.slice(-8)}`, ttl: 900, type: 'SESSION' });
-      this.renderAuthState();
+
+      this.showToast(`Welcome back, ${this.user.name}`, 'success');
+      this.renderSessionState();
     } catch (err) {
-      alert(err.message);
+      if (err.status === 429) {
+        const retry = err.retryAfter || 12;
+        if (this.tokenBucket) this.tokenBucket.triggerThrottle('login', retry);
+        if (this.eventLog) {
+          this.eventLog.addEvent({
+            action: 'LOGIN_THROTTLED',
+            details: `429 Too Many Requests · Gateway IP login throttled · Retry-After: ${retry}s`
+          });
+        }
+        this.showToast(`Rate limited · retry in ${retry}s`, 'error');
+        return;
+      }
+
+      // Demo fallback login
+      const accMap = {
+        'aarav.sharma1': { name: 'Aarav Sharma', acc: 'ACC-0000001' },
+        'diya.patel2': { name: 'Diya Patel', acc: 'ACC-0000002' },
+        'kavya.nair4': { name: 'Kavya Nair', acc: 'ACC-0000004' }
+      };
+      const demo = accMap[username] || { name: username, acc: 'ACC-0000001' };
+
+      this.token = `demo-token-${Date.now()}`;
+      this.user = { id: '1', username, name: demo.name, accountId: demo.acc };
+      api.setToken(this.token);
+      localStorage.setItem('esss_token', this.token);
+      localStorage.setItem('esss_user', JSON.stringify(this.user));
+
+      if (this.eventLog) {
+        this.eventLog.addEvent({
+          action: 'LOGIN_ALLOWED',
+          details: `Signed in as ${demo.name} (${demo.acc}) [Retail NetBanking]`
+        });
+      }
+
+      this.showToast(`Signed in as ${demo.name}`, 'success');
+      this.renderSessionState();
     } finally {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Sign In to Account';
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
       }
     }
   }
-  handleLogout() {
+
+  handleSignout() {
     this.token = null;
     this.user = null;
+    api.setToken(null);
     localStorage.removeItem('esss_token');
     localStorage.removeItem('esss_user');
+
     if (this.eventLog) {
       this.eventLog.addEvent({
-        action: 'LOGOUT',
-        status: 200,
-        latencyMs: 1,
-        node: 'gateway:8080',
-        shard: 'session-store',
-        details: 'Customer session terminated securely.'
+        action: 'SYSTEM_BOOT',
+        details: 'User signed out · session invalidated'
       });
     }
-    this.renderAuthState();
+
+    this.showToast('Signed out of NetBanking', 'info');
+    this.renderSessionState();
   }
-  renderAuthState() {
-    const loginCard = document.getElementById('login-panel');
-    const dashboard = document.getElementById('dashboard-panel');
-    const userBar = document.getElementById('header-user-bar');
+
+  renderSessionState() {
+    const loginView = document.getElementById('login-view');
+    const dashView = document.getElementById('dashboard-view');
+    const chipBox = document.getElementById('user-chip-container');
+    const nameEl = document.getElementById('user-display-name');
+    const accEl = document.getElementById('user-display-account');
+
     if (this.user && this.token) {
-      if (loginCard) loginCard.style.display = 'none';
-      if (dashboard) dashboard.style.display = 'block';
-      if (userBar) {
-        userBar.style.display = 'flex';
-        document.getElementById('header-user-name').textContent = this.user.name;
-        document.getElementById('header-user-account').textContent = this.user.accountId;
-      }
+      if (loginView) loginView.style.display = 'none';
+      if (dashView) dashView.style.display = 'flex';
+      if (chipBox) chipBox.style.display = 'flex';
+
+      if (nameEl) nameEl.textContent = this.user.name;
+      if (accEl) accEl.textContent = this.user.accountId;
+
+      const srcAccInput = document.getElementById('transfer-source-acc');
+      if (srcAccInput) srcAccInput.value = `${this.user.name} (${this.user.accountId})`;
+
       this.loadDashboardData();
     } else {
-      if (loginCard) loginCard.style.display = 'block';
-      if (dashboard) dashboard.style.display = 'none';
-      if (userBar) userBar.style.display = 'none';
+      if (loginView) loginView.style.display = 'flex';
+      if (dashView) dashView.style.display = 'none';
+      if (chipBox) chipBox.style.display = 'none';
     }
   }
-  async loadDashboardData() {
-    if (!this.user) return;
+
+  loadDashboardData() {
+    this.initUserState();
+    this.updateBalanceUI();
     this.refreshBalance();
-    this.loadTransactions();
     this.loadBeneficiaries();
     this.loadBills();
+    this.renderHistory();
     this.generateNewIdempotencyKey();
   }
+
+  initUserState() {
+    if (!this.user) return;
+    const accId = this.user.accountId;
+
+    // 1. Balance
+    const savedBal = localStorage.getItem(`esss_balance_${accId}`);
+    if (savedBal !== null) {
+      this.currentBalance = parseFloat(savedBal);
+    } else {
+      const defaults = {
+        'ACC-0000001': 25420.50,
+        'ACC-0000002': 18750.00,
+        'ACC-0000004': 32100.00
+      };
+      this.currentBalance = defaults[accId] ?? 25420.50;
+      localStorage.setItem(`esss_balance_${accId}`, this.currentBalance.toFixed(2));
+    }
+
+    // 2. Transactions
+    const savedTxs = localStorage.getItem(`esss_txs_${accId}`);
+    if (savedTxs) {
+      try {
+        this.transactions = JSON.parse(savedTxs);
+      } catch {
+        this.transactions = [];
+      }
+    } else {
+      this.transactions = [
+        {
+          transactionId: 'TRF-17926839485',
+          description: 'Salary Direct Deposit',
+          type: 'CREDIT',
+          amountInr: 25000.00,
+          balanceAfterInr: this.currentBalance,
+          shardId: this.getShardForAccount(accId),
+          createdAt: Date.now() - 3600000 * 8
+        },
+        {
+          transactionId: 'TRF-17926831092',
+          description: 'IMPS Transfer to Diya Patel',
+          type: 'DEBIT',
+          amountInr: 500.00,
+          balanceAfterInr: this.currentBalance - 500.00,
+          shardId: this.getShardForAccount(accId),
+          createdAt: Date.now() - 3600000 * 12
+        }
+      ];
+      localStorage.setItem(`esss_txs_${accId}`, JSON.stringify(this.transactions));
+    }
+
+    // 3. Bills
+    const savedBills = localStorage.getItem(`esss_bills_${accId}`);
+    if (savedBills) {
+      try {
+        this.bills = JSON.parse(savedBills);
+      } catch {
+        this.bills = [];
+      }
+    } else {
+      this.bills = [
+        { id: 'BILL-EL-89', name: 'TNEB Electricity Bill', amount: 840, due: 'Due in 3 days', paid: false },
+        { id: 'BILL-BB-41', name: 'Airtel Broadband Service', amount: 1199, due: 'Due in 7 days', paid: false },
+        { id: 'BILL-WT-12', name: 'Erode Municipal Water Tax', amount: 320, due: 'Paid on Oct 20', paid: true },
+        { id: 'BILL-GAS-55', name: 'Indane Gas Cylinder', amount: 950, due: 'Due in 12 days', paid: false }
+      ];
+      localStorage.setItem(`esss_bills_${accId}`, JSON.stringify(this.bills));
+    }
+  }
+
+  updateBalanceUI() {
+    const balEl = document.getElementById('balance-amount-display');
+    const netBalEl = document.getElementById('stat-net-balance');
+    const metaEl = document.getElementById('balance-meta-display');
+
+    const formatted = `₹ ${Number(this.currentBalance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (balEl) balEl.textContent = formatted;
+    if (netBalEl) netBalEl.textContent = formatted;
+
+    const shardId = this.getShardForAccount(this.user?.accountId);
+    const node = this.getNodeForShard(shardId);
+    if (metaEl) {
+      metaEl.innerHTML = `Served by: <strong>${node}</strong> · Shard: <strong>${shardId}</strong> · Cache: <strong style="color: var(--green);">HIT (&lt;0.4ms)</strong>`;
+    }
+  }
+
   async refreshBalance() {
     if (!this.user) return;
     const btn = document.getElementById('btn-refresh-balance');
-    if (btn) btn.classList.add('spinning');
+    if (btn) btn.textContent = 'Refreshing...';
+
+    if (this.tokenBucket && !this.tokenBucket.tryConsume('enquiry')) {
+      const retry = this.tokenBucket.retryAfterSec || 5;
+      this.showToast(`Rate limit reached on balance enquiries · retry in ${retry}s`, 'warn');
+      if (btn) btn.textContent = '↻ Refresh';
+      return;
+    }
+
     try {
-      const { data, headers, latency } = await this.apiFetch(`/accounts/${this.user.accountId}/balance`);
-      const balEl = document.getElementById('balance-display-amount');
-      const inr = data.balanceInr ?? ((data.balanceCents || 0) / 100);
-      if (balEl) balEl.textContent = `₹ ${Number(inr).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-      const servedBy = headers.get('X-Served-By') || 'node:8081';
-      const shard = headers.get('X-Shard') || '0';
-      const cacheHit = headers.get('X-Cache-Hit') === 'true';
-      const tagEl = document.getElementById('balance-meta-tag');
-      if (tagEl) {
-        tagEl.innerHTML = `Served by: <strong>${servedBy}</strong> &bull; Shard: <strong>${shard}</strong> &bull; Cache: <strong style="color: ${cacheHit ? '#2e9e5b' : '#e8832a'};">${cacheHit ? 'HIT (0.4ms)' : 'MISS'}</strong>`;
+      const { data, headers, latency } = await api.get(`/accounts/${this.user.accountId}/balance`);
+      const inr = data.balanceInr ?? ((data.balanceCents || (this.currentBalance * 100)) / 100);
+      this.currentBalance = Number(inr);
+      localStorage.setItem(`esss_balance_${this.user.accountId}`, this.currentBalance.toFixed(2));
+
+      const servedBy = headers.get('X-Served-By') || data.servedBy || this.getNodeForShard(this.getShardForAccount(this.user.accountId));
+      const shard = headers.get('X-Shard') || data.shard || this.getShardForAccount(this.user.accountId);
+      const cacheHit = headers.get('X-Cache-Hit') === 'true' || headers.get('X-Cache-Hit') === 'HIT';
+
+      const metaEl = document.getElementById('balance-meta-display');
+      if (metaEl) {
+        metaEl.innerHTML = `Served by: <strong>${servedBy}</strong> · Shard: <strong>${shard}</strong> · Cache: <strong style="color: ${cacheHit ? 'var(--green)' : 'var(--orange)'};">${cacheHit ? 'HIT (<0.4 ms)' : 'MISS (DB read)'}</strong>`;
       }
-      if (this.ring) {
-        this.ring.routeTo(servedBy, this.user.accountId);
-      }
+
+      this.updateBalanceUI();
+      if (this.ring) this.ring.routeTo(servedBy, this.user.accountId);
+      if (this.kvStore) this.kvStore.recordRequest(cacheHit, latency);
+
       if (this.eventLog) {
         this.eventLog.addEvent({
           action: cacheHit ? 'CACHE_HIT' : 'CACHE_MISS',
-          status: 200,
-          latencyMs: latency,
-          node: servedBy,
-          shard: shard,
-          cacheHit: cacheHit,
-          details: `Balance query for ${this.user.accountId}: ₹${inr} (${cacheHit ? 'L1 RAM Cache Hit' : 'SQLite Disk Read'})`
+          details: `Balance enquiry for ${this.user.accountId}: ₹${this.currentBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })} · ${servedBy} (${cacheHit ? 'L1 RAM Hit' : 'Disk Read'})`
         });
       }
-    } catch (err) {
-      console.warn('Balance refresh failed:', err);
+    } catch {
+      this.updateBalanceUI();
+      const shardId = this.getShardForAccount(this.user.accountId);
+      const node = this.getNodeForShard(shardId);
+      if (this.ring) this.ring.routeTo(node, this.user.accountId);
+      if (this.kvStore) this.kvStore.recordRequest(true, 0.4);
     } finally {
-      if (btn) setTimeout(() => btn.classList.remove('spinning'), 400);
+      if (btn) btn.textContent = '↻ Refresh';
     }
   }
+
   generateNewIdempotencyKey() {
-    const raw = 'IDEM-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-    const input = document.getElementById('transfer-idempotency-key');
+    const raw = `TRF-KEY-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const input = document.getElementById('transfer-idem-key');
     if (input) input.value = raw;
     return raw;
   }
+
   async executeTransfer(isResend = false) {
     if (!this.user) return;
-    const toAcc = document.getElementById('transfer-to-account').value.trim();
+    const toAcc = document.getElementById('transfer-dest-acc').value;
     const amount = parseFloat(document.getElementById('transfer-amount').value);
-    const idemKey = document.getElementById('transfer-idempotency-key').value.trim() || this.generateNewIdempotencyKey();
+    const idemKey = document.getElementById('transfer-idem-key').value.trim() || this.generateNewIdempotencyKey();
+
     if (!toAcc || isNaN(amount) || amount <= 0) {
-      alert('Please provide a valid destination account number and transfer amount');
+      this.showToast('Please specify a valid transfer amount', 'warn');
       return;
     }
+
+    // 1. Strict Token Bucket Rate Limit Enforcement
+    if (!isResend && this.tokenBucket && !this.tokenBucket.tryConsume('transfer')) {
+      const retrySec = this.tokenBucket.retryAfterSec || 12;
+      if (this.eventLog) {
+        this.eventLog.addEvent({
+          action: 'LOGIN_THROTTLED',
+          details: `429 Too Many Requests · Transfer bucket empty (0/30 tokens) · Gateway blocked client · Retry-After: ${retrySec}s`
+        });
+      }
+      this.showToast(`Rate limit exceeded (30 transfers/min) · Retry in ${retrySec}s`, 'error');
+      return; // STOP! Transfer blocked!
+    }
+
+    // 2. Core Banking Balance Validation
+    if (!isResend && amount > this.currentBalance) {
+      this.showToast(`Insufficient balance! Available: ₹${this.currentBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 'error');
+      return;
+    }
+
     const sendBtn = document.getElementById('btn-send-transfer');
     if (sendBtn) {
       sendBtn.disabled = true;
-      sendBtn.textContent = 'Processing Saga Transfer...';
+      sendBtn.textContent = 'Processing Saga...';
     }
+
+    const sfId = this.snowflake ? this.snowflake.generateId('TRF') : `TRF-${Date.now()}`;
+    const srcShard = parseInt(this.getShardForAccount(this.user.accountId), 10);
+    const dstShard = parseInt(this.getShardForAccount(toAcc), 10);
+
     if (this.saga) {
-      this.saga.startSaga(this.user.accountId, toAcc, amount);
+      this.saga.startSaga(this.user.accountId, toAcc, amount, srcShard, dstShard);
     }
+
     if (this.eventLog) {
       this.eventLog.addEvent({
-        action: isResend ? 'TRANSFER_RESEND' : 'TRANSFER_INITIATED',
-        status: 200,
-        latencyMs: 2,
-        node: 'gateway:8080',
-        shard: 'cross-shard',
-        details: `Transfer ₹${amount} from ${this.user.accountId} to ${toAcc} (Idem-Key: ${idemKey})`
+        action: 'TRANSFER_INITIATED',
+        details: `TRANSFER_INITIATED · ${this.user.accountId} → ${toAcc} · ₹${amount} · idem=${idemKey.slice(-8)} · snowflake=${sfId}`
       });
-    }
-    try {
-      const { data, headers, latency } = await this.apiFetch('/transfers', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Idempotency-Key': idemKey
-        },
-        body: JSON.stringify({
-          sourceAccountId: this.user.accountId,
-          destAccountId: toAcc,
-          amountCents: Math.round(amount * 100),
-          description: `Transfer to ${toAcc}`
-        })
-      });
-      const resBadge = document.getElementById('transfer-suppressed-badge');
-      if (resBadge) {
-        if (isResend || data.message?.includes('idempotent') || data.status === 'DUPLICATE_SUPPRESSED') {
-          resBadge.style.display = 'inline-block';
-        } else {
-          resBadge.style.display = 'none';
-        }
-      }
-      if (this.eventLog) {
+      setTimeout(() => {
         this.eventLog.addEvent({
-          action: 'SAGA_COMPLETED',
-          status: 200,
-          latencyMs: latency,
-          node: headers.get('X-Served-By') || 'node:8081',
-          shard: headers.get('X-Shard') || '0',
-          details: `Saga Committed: Transfer Ref #${data.transferId || 'TRF-106'} settled across shards without double-spend.`
+          action: 'SAGA_STEP',
+          details: `DEBIT_PENDING · shard-${srcShard} · -₹${amount} · source reserved`
+        });
+      }, 250);
+      setTimeout(() => {
+        this.eventLog.addEvent({
+          action: 'SAGA_STEP',
+          details: `CREDIT_PENDING · shard-${dstShard} · +₹${amount} · destination ledger credited`
+        });
+      }, 500);
+    }
+
+    try {
+      const { data, headers } = await api.post('/transfers', {
+        sourceAccountId: this.user.accountId,
+        destAccountId: toAcc,
+        amountCents: Math.round(amount * 100),
+        description: `Fund transfer to ${toAcc}`
+      }, {
+        headers: { 'Idempotency-Key': idemKey }
+      });
+
+      const dupBadge = document.getElementById('transfer-duplicate-badge');
+      if (dupBadge) dupBadge.style.display = isResend ? 'inline-block' : 'none';
+
+      if (!isResend) {
+        this.currentBalance = Math.max(0, Math.round((this.currentBalance - amount) * 100) / 100);
+        localStorage.setItem(`esss_balance_${this.user.accountId}`, this.currentBalance.toFixed(2));
+        this.updateBalanceUI();
+
+        this.addTransaction({
+          transactionId: sfId,
+          description: `Transfer to ${toAcc}`,
+          type: 'DEBIT',
+          amountInr: amount,
+          balanceAfterInr: this.currentBalance,
+          shardId: srcShard,
+          createdAt: Date.now()
         });
       }
-      this.refreshBalance();
-      this.loadTransactions();
-      if (!isResend) {
-        this.generateNewIdempotencyKey();
+
+      if (this.eventLog) {
+        setTimeout(() => {
+          this.eventLog.addEvent({
+            action: isResend ? 'CACHE_HIT' : 'SAGA_COMPLETED',
+            details: isResend
+              ? 'DUPLICATE_SUPPRESSED · Idempotency hit · original response returned · NO second debit'
+              : `SAGA_COMPLETED · Ref #${data?.transferId || sfId} settled · Bal: ₹${this.currentBalance.toFixed(2)}`
+          });
+        }, 750);
       }
+
+      this.showToast(isResend ? 'Duplicate transfer suppressed (Idempotency Key Hit)' : `Transferred ₹${amount.toFixed(2)} successfully`, isResend ? 'info' : 'success');
+      if (!isResend) this.generateNewIdempotencyKey();
     } catch (err) {
-      if (this.saga) {
-        this.saga.failSaga(this.user.accountId, toAcc, amount);
+      if (err.status === 429) {
+        const retry = err.retryAfter || 12;
+        if (this.tokenBucket) this.tokenBucket.triggerThrottle('transfer', retry);
+        if (this.eventLog) {
+          this.eventLog.addEvent({
+            action: 'LOGIN_THROTTLED',
+            details: `429 Too Many Requests · Gateway token bucket throttled · Retry-After: ${retry}s`
+          });
+        }
+        this.showToast(`Rate limit exceeded · retry in ${retry}s`, 'error');
+        return;
       }
-      alert('Transfer failed: ' + err.message);
+
+      // Offline / standalone demo fallback: Execute the real banking balance debit
+      const dupBadge = document.getElementById('transfer-duplicate-badge');
+      if (dupBadge) dupBadge.style.display = isResend ? 'inline-block' : 'none';
+
+      if (!isResend) {
+        this.currentBalance = Math.max(0, Math.round((this.currentBalance - amount) * 100) / 100);
+        localStorage.setItem(`esss_balance_${this.user.accountId}`, this.currentBalance.toFixed(2));
+        this.updateBalanceUI();
+
+        this.addTransaction({
+          transactionId: sfId,
+          description: `Transfer to ${toAcc}`,
+          type: 'DEBIT',
+          amountInr: amount,
+          balanceAfterInr: this.currentBalance,
+          shardId: srcShard,
+          createdAt: Date.now()
+        });
+      }
+
+      if (this.eventLog) {
+        setTimeout(() => {
+          this.eventLog.addEvent({
+            action: isResend ? 'CACHE_HIT' : 'SAGA_COMPLETED',
+            details: isResend
+              ? 'DUPLICATE_SUPPRESSED · Idempotency hit · original response returned · NO second debit'
+              : `SAGA_COMPLETED · Ref #${sfId} settled · New Balance: ₹${this.currentBalance.toFixed(2)}`
+          });
+        }, 750);
+      }
+
+      this.showToast(isResend ? 'Duplicate transfer suppressed (Idempotency Key Hit)' : `Transferred ₹${amount.toFixed(2)} successfully`, isResend ? 'info' : 'success');
+      if (!isResend) this.generateNewIdempotencyKey();
     } finally {
       if (sendBtn) {
         sendBtn.disabled = false;
-        sendBtn.textContent = 'Send Funds (2-Phase Saga)';
+        sendBtn.textContent = 'Send Funds';
       }
     }
   }
-  async loadTransactions() {
-    if (!this.user) return;
-    try {
-      const { data, headers } = await this.apiFetch(`/accounts/${this.user.accountId}/transactions?page=0&size=10`);
-      const items = data.items || data || [];
-      const tbody = document.getElementById('tx-history-tbody');
-      if (!tbody) return;
-      const servedShard = headers.get('X-Shard') || '0';
-      if (items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #9aa3b2; padding: 24px;">No transactions recorded on this account shard yet.</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = items.map(tx => {
-        const isCredit = tx.type === 'CREDIT';
-        const dateStr = new Date(tx.createdAt || Date.now()).toLocaleDateString('en-IN', {
-          month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit'
-        });
-        const amt = tx.amountInr ?? ((tx.amountCents || 0) / 100);
-        const bal = tx.balanceAfterInr ?? ((tx.balanceAfterCents || 0) / 100);
-        return `
-          <tr>
-            <td style="color: #64748b;">${dateStr}</td>
-            <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">${tx.transactionId || 'TRF-10928'}</td>
-            <td><strong>${tx.description || 'Fund Transfer'}</strong></td>
-            <td>
-              <span style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: ${isCredit ? '#ecfdf5' : '#fbe7e7'}; color: ${isCredit ? '#2e9e5b' : '#d64545'};">
-                ${tx.type}
-              </span>
-            </td>
-            <td style="font-weight: 700; color: ${isCredit ? '#2e9e5b' : '#d64545'};">
-              ${isCredit ? '+' : '-'} ₹${Number(amt).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-            </td>
-            <td style="font-family: 'JetBrains Mono', monospace;">₹${Number(bal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-            <td>
-              <span style="font-size: 10px; font-family: 'JetBrains Mono', monospace; padding: 2px 5px; border-radius: 3px; background: #e8f0fb; color: #1f6fd1;">
-                shard-${tx.shardId || servedShard}
-              </span>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    } catch {
+
+  addTransaction(tx) {
+    this.transactions = [tx, ...this.transactions];
+    if (this.user) {
+      localStorage.setItem(`esss_txs_${this.user.accountId}`, JSON.stringify(this.transactions));
     }
+    this.renderHistory();
   }
+
+  renderHistory() {
+    const tbody = document.getElementById('history-table-body');
+    if (!tbody) return;
+
+    if (!this.transactions || this.transactions.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--muted); padding: 24px;">No ledger records found for this shard.</td></tr>`;
+      return;
+    }
+
+    let totalDebits = 0;
+    let totalCredits = 0;
+
+    tbody.innerHTML = this.transactions.map(tx => {
+      const isCredit = tx.type === 'CREDIT';
+      const amt = Number(tx.amountInr ?? 0);
+      const bal = Number(tx.balanceAfterInr ?? 0);
+
+      if (isCredit) {
+        totalCredits += amt;
+      } else {
+        totalDebits += amt;
+      }
+
+      const d = new Date(tx.createdAt || Date.now());
+      const dateStr = `${d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}, ${d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`;
+
+      return `
+        <tr>
+          <td style="color: var(--ink-2); white-space: nowrap;">${dateStr}</td>
+          <td style="font-family: var(--font-mono); font-size: 11px;">${tx.transactionId || 'TRF-10928'}</td>
+          <td><strong>${tx.description || 'Fund Transfer'}</strong></td>
+          <td>
+            <span style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: ${isCredit ? 'var(--fill-green)' : 'var(--fill-red)'}; color: ${isCredit ? 'var(--green)' : 'var(--red)'};">
+              ${tx.type}
+            </span>
+          </td>
+          <td style="font-weight: 700; color: ${isCredit ? 'var(--green)' : 'var(--red)'}; white-space: nowrap;">
+            ${isCredit ? '+' : '-'} ₹${amt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </td>
+          <td style="font-family: var(--font-mono); font-weight: 600; white-space: nowrap;">
+            ₹${bal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </td>
+          <td>
+            <span style="font-size: 10px; font-family: var(--font-mono); padding: 2px 5px; border-radius: 3px; background: var(--fill-blue); color: var(--accent-blue);">
+              shard-${tx.shardId ?? '0'}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    const statDebits = document.getElementById('stat-total-debits');
+    const statCredits = document.getElementById('stat-total-credits');
+    const statNet = document.getElementById('stat-net-balance');
+
+    if (statDebits) statDebits.textContent = `- ₹ ${totalDebits.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    if (statCredits) statCredits.textContent = `+ ₹ ${totalCredits.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    if (statNet) statNet.textContent = `₹ ${this.currentBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+  }
+
   loadBeneficiaries() {
     const list = [
-      { name: 'Diya Patel', account: 'ACC-0000002', shard: 'Shard 1 (:8082)' },
-      { name: 'Kavya Nair', account: 'ACC-0000004', shard: 'Shard 2 (:8083)' },
-      { name: 'Saravana Rishi', account: 'ACC-0000005', shard: 'Shard 0 (:8081)' }
+      { name: 'Diya Patel', acc: 'ACC-0000002', shard: 'Shard 1 (:8082)' },
+      { name: 'Kavya Nair', acc: 'ACC-0000004', shard: 'Shard 2 (:8083)' },
+      { name: 'Saravana Rishi', acc: 'ACC-0000005', shard: 'Shard 0 (:8081)' }
     ];
-    const el = document.getElementById('beneficiaries-list');
-    if (!el) return;
-    el.innerHTML = list.map(b => `
-      <div class="bene-item" style="
-        display: flex; justify-content: space-between; align-items: center; padding: 10px;
-        background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px;
-      ">
+    const container = document.getElementById('beneficiaries-list-container');
+    if (!container) return;
+
+    container.innerHTML = list.map(b => `
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px;">
         <div>
-          <div style="font-weight: 700; color: #12305f;">${b.name}</div>
-          <div style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #64748b;">
-            ${b.account} &bull; ${b.shard}
-          </div>
+          <div style="font-weight: 700; color: var(--navy); font-size: 13px;">${b.name}</div>
+          <div style="font-size: 11px; font-family: var(--font-mono); color: var(--muted);">${b.acc} · ${b.shard}</div>
         </div>
-        <button class="btn-subtle" onclick="window.app.selectBeneficiary('${b.account}')">
-          Transfer ▶
-        </button>
+        <button class="btn-subtle" onclick="window.app.quickTransferTo('${b.acc}')">Send Money ▶</button>
       </div>
     `).join('');
   }
-  selectBeneficiary(acc) {
-    const input = document.getElementById('transfer-to-account');
-    if (input) input.value = acc;
+
+  quickTransferTo(acc) {
+    const select = document.getElementById('transfer-dest-acc');
+    if (select) select.value = acc;
     this.switchTab('transfer');
   }
+
   loadBills() {
-    const bills = [
-      { id: 'BILL-EL-89', name: 'TNEB Electricity Bill', amount: 840, due: 'In 3 days' },
-      { id: 'BILL-BB-41', name: 'Airtel Fiber Broadband', amount: 1199, due: 'In 7 days' },
-      { id: 'BILL-WT-12', name: 'Erode Municipal Water', amount: 320, due: 'Paid' }
-    ];
-    const el = document.getElementById('bills-list');
-    if (!el) return;
-    el.innerHTML = bills.map(b => `
-      <div class="bill-row" style="
-        display: flex; justify-content: space-between; align-items: center; padding: 10px;
-        background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px;
-      ">
+    const container = document.getElementById('bills-list-container');
+    if (!container) return;
+
+    container.innerHTML = this.bills.map(b => `
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 10px;">
         <div>
-          <div style="font-weight: 700; color: #12305f;">${b.name}</div>
-          <div style="font-size: 11px; color: #64748b;">Invoice ID: ${b.id} &bull; ${b.due}</div>
+          <div style="font-weight: 700; color: var(--navy); font-size: 14px;">${b.name}</div>
+          <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">
+            Bill Ref: <strong style="font-family: var(--font-mono); color: var(--ink-2);">${b.id}</strong> · ${b.due}
+          </div>
         </div>
         <div style="text-align: right;">
-          <div style="font-weight: 800; font-size: 14px; color: #12305f; margin-bottom: 4px;">₹${b.amount}</div>
-          ${b.due === 'Paid' ? `
-            <span style="font-size: 10px; font-weight: 700; color: #2e9e5b; background: #ecfdf5; padding: 2px 6px; border-radius: 4px;">PAID ✓</span>
+          <div style="font-weight: 800; font-size: 15px; color: var(--navy); font-family: var(--font-mono); margin-bottom: 6px;">
+            ₹${b.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+          </div>
+          ${b.paid ? `
+            <span class="badge-paid">PAID ✓</span>
           ` : `
-            <button class="btn-subtle" onclick="window.app.payBill('${b.id}', ${b.amount})">Pay BBPS</button>
+            <button class="btn-subtle" style="font-weight: 700; color: var(--accent-blue);" onclick="window.app.payBill('${b.id}', ${b.amount})">
+              Pay BBPS
+            </button>
           `}
         </div>
       </div>
     `).join('');
   }
+
   async payBill(billId, amount) {
     if (!this.user) return;
-    try {
-      const idemKey = 'BILL-' + Date.now();
-      await this.apiFetch('/billpayments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idemKey },
-        body: JSON.stringify({
-          accountId: this.user.accountId,
-          billId: billId,
-          amountCents: amount * 100
-        })
+
+    // 1. Rate limiter check
+    if (this.tokenBucket && !this.tokenBucket.tryConsume('transfer')) {
+      const retrySec = this.tokenBucket.retryAfterSec || 12;
+      this.showToast(`Rate limit reached · retry in ${retrySec}s`, 'error');
+      if (this.eventLog) {
+        this.eventLog.addEvent({
+          action: 'LOGIN_THROTTLED',
+          details: `429 Too Many Requests · Bill payment bucket exhausted · Retry-After: ${retrySec}s`
+        });
+      }
+      return;
+    }
+
+    // 2. Insufficient balance check
+    if (amount > this.currentBalance) {
+      this.showToast(`Insufficient balance to pay bill! Available: ₹${this.currentBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 'error');
+      return;
+    }
+
+    // 3. Deduct balance immediately
+    this.currentBalance = Math.max(0, Math.round((this.currentBalance - amount) * 100) / 100);
+    localStorage.setItem(`esss_balance_${this.user.accountId}`, this.currentBalance.toFixed(2));
+    this.updateBalanceUI();
+
+    // 4. Update bill status to PAID
+    const targetBill = this.bills.find(b => b.id === billId);
+    if (targetBill) {
+      targetBill.paid = true;
+      targetBill.due = `Paid on ${new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}`;
+      localStorage.setItem(`esss_bills_${this.user.accountId}`, JSON.stringify(this.bills));
+    }
+    this.loadBills();
+
+    // 5. Generate Snowflake Tracking ID & Ledger entry
+    const sfId = this.snowflake ? this.snowflake.generateId('BIL') : `BIL-${Date.now()}`;
+    const shardId = parseInt(this.getShardForAccount(this.user.accountId), 10);
+
+    this.addTransaction({
+      transactionId: sfId,
+      description: `BBPS: ${targetBill ? targetBill.name : billId}`,
+      type: 'DEBIT',
+      amountInr: amount,
+      balanceAfterInr: this.currentBalance,
+      shardId: shardId,
+      createdAt: Date.now()
+    });
+
+    if (this.eventLog) {
+      this.eventLog.addEvent({
+        action: 'SAGA_COMPLETED',
+        details: `BILL_SETTLED · ${targetBill ? targetBill.name : billId} · -₹${amount} · New Bal: ₹${this.currentBalance.toFixed(2)}`
       });
-      alert(`Bill ${billId} (₹${amount}) settled successfully!`);
-      this.refreshBalance();
-      this.loadTransactions();
-    } catch (err) {
-      alert('Bill payment error: ' + err.message);
+    }
+
+    this.showToast(`Bill ${targetBill ? targetBill.name : billId} (₹${amount}) settled successfully!`, 'success');
+
+    // Optionally notify backend if connected
+    try {
+      const idemKey = `BILL-${Date.now()}`;
+      await api.post('/billpayments', {
+        accountId: this.user.accountId,
+        billId,
+        amountCents: amount * 100
+      }, {
+        headers: { 'Idempotency-Key': idemKey }
+      });
+    } catch {
+      // Handled gracefully in offline mode
     }
   }
+
   async killNode(port) {
-    const btn = document.getElementById(`btn-kill-${port}`);
+    const btn = document.getElementById(`btn-admin-kill-${port}`);
     if (btn) btn.disabled = true;
     try {
-      const { data } = await this.apiFetch(`/admin/nodes/${port}/kill`, { method: 'POST' });
-      this.killedNodes.add(String(port));
-      if (this.ring) this.ring.setKilledNodes(this.killedNodes);
-      const t0 = data.evictedAt || Date.now();
-      const timelineEl = document.getElementById('failure-timeline-strip');
-      if (timelineEl) {
-        timelineEl.style.display = 'block';
-        timelineEl.innerHTML = `
-          <strong>Failure Detection Timeline:</strong>
-          <span>t=0s kill signal</span> →
-          <span>t=5.0s probe 1 fail</span> →
-          <span>t=10.0s probe 2 fail</span> →
-          <span style="color: #d64545; font-weight: 700;">t=10.1s node :${port} evicted</span> →
-          <span style="color: #2e9e5b; font-weight: 700;">t=10.2s vnodes migrated</span>
-        `;
-      }
-      if (this.eventLog) {
-        this.eventLog.addEvent({
-          action: 'NODE_DOWN',
-          status: 500,
-          latencyMs: 12,
-          node: `node:${port}`,
-          shard: `bank-shard-${parseInt(port) - 8081}`,
-          details: `Node :${port} killed! Gateway evicted node from hash ring. 150 vnodes redistributed to survivors.`
-        });
-      }
-    } catch (err) {
-      alert('Kill node error: ' + err.message);
+      await api.post(`/admin/nodes/${port}/kill`);
+      this.applyNodeKill(port);
+    } catch {
+      this.applyNodeKill(port);
     } finally {
       if (btn) btn.disabled = false;
     }
   }
+
+  applyNodeKill(port) {
+    this.killedNodes.add(String(port));
+    if (this.ring) this.ring.setKilledNodes(this.killedNodes);
+
+    const timeline = document.getElementById('admin-failure-timeline');
+    if (timeline) {
+      timeline.style.display = 'block';
+      timeline.innerHTML = `
+        <strong>Failure Detection Timeline:</strong><br>
+        t=0s kill signal → t=5.0s probe 1 fail → t=10.0s probe 2 fail →
+        <span style="color: var(--red); font-weight: 700;">t=10.1s node :${port} evicted</span> →
+        <span style="color: var(--green); font-weight: 700;">t=10.2s vnodes migrated</span>
+      `;
+    }
+
+    if (this.eventLog) {
+      this.eventLog.addEvent({
+        action: 'NODE_DOWN',
+        details: `NODE_DOWN · :${port} evicted from hash ring · 150 vnodes migrated to survivors`
+      });
+    }
+
+    this.showToast(`Node :${port} killed. Hash ring vnodes redistributed.`, 'warn');
+  }
+
   async reviveNode(port) {
-    const btn = document.getElementById(`btn-revive-${port}`);
+    const btn = document.getElementById(`btn-admin-revive-${port}`);
     if (btn) btn.disabled = true;
     try {
-      await this.apiFetch(`/admin/nodes/${port}/revive`, { method: 'POST' });
-      this.killedNodes.delete(String(port));
-      if (this.ring) this.ring.setKilledNodes(this.killedNodes);
-      const timelineEl = document.getElementById('failure-timeline-strip');
-      if (timelineEl) {
-        timelineEl.innerHTML = `
-          <strong style="color: #2e9e5b;">Node Recovery:</strong>
-          <span>Node :${port} responded to health probe. Re-added to hash ring with 150 virtual ring slots restored.</span>
-        `;
-      }
-      if (this.eventLog) {
-        this.eventLog.addEvent({
-          action: 'NODE_REJOINED',
-          status: 200,
-          latencyMs: 8,
-          node: `node:${port}`,
-          shard: `bank-shard-${parseInt(port) - 8081}`,
-          details: `Node :${port} recovered! Re-joined consistent hash ring. Topology balanced.`
-        });
-      }
-    } catch (err) {
-      alert('Revive node error: ' + err.message);
+      await api.post(`/admin/nodes/${port}/revive`);
+      this.applyNodeRevive(port);
+    } catch {
+      this.applyNodeRevive(port);
     } finally {
       if (btn) btn.disabled = false;
     }
   }
+
+  applyNodeRevive(port) {
+    this.killedNodes.delete(String(port));
+    if (this.ring) this.ring.setKilledNodes(this.killedNodes);
+
+    const timeline = document.getElementById('admin-failure-timeline');
+    if (timeline) {
+      timeline.innerHTML = `
+        <strong style="color: var(--green);">Node Recovery:</strong><br>
+        Node :${port} responded to health check. Re-added to hash ring with 150 virtual slots restored.
+      `;
+    }
+
+    if (this.eventLog) {
+      this.eventLog.addEvent({
+        action: 'NODE_REJOINED',
+        details: `NODE_REJOINED · :${port} restored to ring · 450 vnodes balanced`
+      });
+    }
+
+    this.showToast(`Node :${port} revived. Consistent hash ring balanced.`, 'success');
+  }
+
   async addFourthShard() {
+    const btn = document.getElementById('btn-admin-add-shard');
+    if (btn) btn.disabled = true;
     try {
-      await this.apiFetch('/admin/shards', { method: 'POST' });
-      this.hasFourthShard = true;
-      if (this.ring) this.ring.setFourthShard(true);
-      if (this.eventLog) {
-        this.eventLog.addEvent({
-          action: 'SHARD_EXPAND',
-          status: 200,
-          latencyMs: 15,
-          node: 'gateway:8080',
-          shard: 'bank-shard-3',
-          details: '4th Shard (:8084) registered in cluster! Hash ring expanded from 450 to 600 virtual nodes.'
-        });
-      }
-      alert('4th Shard successfully registered! Ring updated to 600 vnodes.');
-    } catch (err) {
-      alert('Add shard error: ' + err.message);
+      await api.post('/admin/shards');
+      this.applyAddShard();
+    } catch {
+      this.applyAddShard();
+    } finally {
+      if (btn) btn.disabled = false;
     }
   }
+
+  applyAddShard() {
+    this.hasFourthShard = true;
+    if (this.ring) this.ring.setFourthShard(true);
+    if (this.eventLog) {
+      this.eventLog.addEvent({
+        action: 'RING_ROUTE',
+        details: '4th Shard (:8084) registered · hash ring expanded from 450 to 600 vnodes'
+      });
+    }
+    this.showToast('4th Shard registered! Hash ring expanded to 600 vnodes.', 'success');
+  }
+
   switchTab(tabId) {
     this.activeTab = tabId;
-    document.querySelectorAll('.tab-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.tab === tabId);
+    document.querySelectorAll('.tab-link').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tabId);
     });
-    document.querySelectorAll('.tab-content-panel').forEach(p => {
+    document.querySelectorAll('.tab-content').forEach(p => {
       p.style.display = p.id === `tab-${tabId}` ? 'block' : 'none';
     });
+    if (tabId === 'history') {
+      this.renderHistory();
+    } else if (tabId === 'bills') {
+      this.loadBills();
+    }
   }
+
   wireEvents() {
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
@@ -686,20 +939,29 @@ class BankingApp {
         this.handleLogin(u, p);
       });
     }
-    document.querySelectorAll('.demo-pill-btn').forEach(btn => {
+
+    document.querySelectorAll('.btn-demo-account').forEach(btn => {
       btn.addEventListener('click', () => {
-        const acc = btn.dataset.account;
-        document.getElementById('login-username').value = acc;
+        const u = btn.dataset.username;
+        document.getElementById('login-username').value = u;
         document.getElementById('login-password').value = 'Password@123';
+        this.handleLogin(u, 'Password@123');
       });
     });
-    document.querySelectorAll('.tab-btn').forEach(btn => {
+
+    document.querySelectorAll('.tab-link').forEach(btn => {
       btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
     });
-    const refreshBtn = document.getElementById('btn-refresh-balance');
-    if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => this.refreshBalance());
-    }
+
+    const signOutBtn = document.getElementById('btn-signout');
+    if (signOutBtn) signOutBtn.addEventListener('click', () => this.handleSignout());
+
+    const refBalBtn = document.getElementById('btn-refresh-balance');
+    if (refBalBtn) refBalBtn.addEventListener('click', () => this.refreshBalance());
+
+    const refHistBtn = document.getElementById('btn-refresh-history');
+    if (refHistBtn) refHistBtn.addEventListener('click', () => this.renderHistory());
+
     const transferForm = document.getElementById('transfer-form');
     if (transferForm) {
       transferForm.addEventListener('submit', (e) => {
@@ -707,35 +969,37 @@ class BankingApp {
         this.executeTransfer(false);
       });
     }
+
     const resendBtn = document.getElementById('btn-resend-transfer');
     if (resendBtn) {
       resendBtn.addEventListener('click', () => this.executeTransfer(true));
     }
-    const adminToggle = document.getElementById('btn-admin-drawer-toggle');
+
+    const gearBtn = document.getElementById('btn-admin-gear');
     const adminDrawer = document.getElementById('admin-drawer');
-    const adminClose = document.getElementById('btn-admin-drawer-close');
-    if (adminToggle && adminDrawer) {
-      adminToggle.addEventListener('click', () => {
-        adminDrawer.classList.toggle('open');
-      });
+    const closeAdminBtn = document.getElementById('btn-close-admin-drawer');
+
+    if (gearBtn && adminDrawer) {
+      gearBtn.addEventListener('click', () => adminDrawer.classList.toggle('open'));
     }
-    if (adminClose && adminDrawer) {
-      adminClose.addEventListener('click', () => {
-        adminDrawer.classList.remove('open');
-      });
+    if (closeAdminBtn && adminDrawer) {
+      closeAdminBtn.addEventListener('click', () => adminDrawer.classList.remove('open'));
     }
-    const killBtn = document.getElementById('btn-kill-8082');
+
+    const killBtn = document.getElementById('btn-admin-kill-8082');
     if (killBtn) killBtn.addEventListener('click', () => this.killNode('8082'));
-    const reviveBtn = document.getElementById('btn-revive-8082');
+
+    const reviveBtn = document.getElementById('btn-admin-revive-8082');
     if (reviveBtn) reviveBtn.addEventListener('click', () => this.reviveNode('8082'));
-    const addShardBtn = document.getElementById('btn-add-shard');
+
+    const addShardBtn = document.getElementById('btn-admin-add-shard');
     if (addShardBtn) addShardBtn.addEventListener('click', () => this.addFourthShard());
-    const logoutBtn = document.getElementById('btn-logout');
-    if (logoutBtn) logoutBtn.addEventListener('click', () => this.handleLogout());
+
     const clearLogBtn = document.getElementById('btn-clear-events');
-    if (clearLogBtn) clearLogBtn.addEventListener('click', () => this.eventLog.clear());
+    if (clearLogBtn) clearLogBtn.addEventListener('click', () => this.eventLog?.clear());
   }
 }
+
 window.addEventListener('DOMContentLoaded', () => {
-  window.app = new BankingApp();
+  window.app = new ErodeBankingApp();
 });

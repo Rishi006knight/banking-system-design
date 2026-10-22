@@ -22,7 +22,7 @@ function copyRecursive(src, dest) {
         copyRecursive(srcPath, destPath);
       }
     } else {
-      if (entry.name === 'index.html' || entry.name.endsWith('.js') || entry.name.endsWith('.css') || entry.name.endsWith('.png') || entry.name.endsWith('.svg')) {
+      if (entry.name !== 'copy-static.js' && (entry.name === 'index.html' || entry.name.endsWith('.js') || entry.name.endsWith('.css') || entry.name.endsWith('.png') || entry.name.endsWith('.svg'))) {
         fs.copyFileSync(srcPath, destPath);
         console.log(`Copied: ${entry.name} -> ${destPath}`);
       }
