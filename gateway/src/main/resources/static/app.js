@@ -39,12 +39,6 @@ class ErodeBankingApp {
   init() {
     this.initComponents();
 
-    api.onOfflineStateChange = (offline) => {
-      const banner = document.getElementById('offline-banner');
-      if (banner) banner.style.display = offline ? 'block' : 'none';
-    };
-
-
     this.setupTelemetryToggle();
     this.wireEvents();
     this.renderSessionState();
@@ -320,6 +314,11 @@ class ErodeBankingApp {
     this.loadBills();
     this.renderHistory();
     this.generateNewIdempotencyKey();
+
+    if (this.ring && this.user) {
+      const port = this.getNodeForShard(this.getShardForAccount(this.user.accountId)).replace(/\D/g, '');
+      this.ring.routeTo(port, this.user.accountId);
+    }
   }
 
   initUserState() {
@@ -898,16 +897,56 @@ class ErodeBankingApp {
   }
 
   updateClusterControlsUI() {
-    const killBtn = document.getElementById('btn-admin-kill-8082');
-    const reviveBtn = document.getElementById('btn-admin-revive-8082');
-    const is8082Killed = this.killedNodes.has('8082');
-    if (killBtn) killBtn.disabled = is8082Killed;
-    if (reviveBtn) reviveBtn.disabled = !is8082Killed;
+    const totalNodes = this.hasFourthShard ? 4 : 3;
+    const removedCount = this.killedNodes.size;
+    const counterEl = document.getElementById('admin-removal-counter');
+    if (counterEl) {
+      counterEl.textContent = `${removedCount} / 3 removed`;
+      counterEl.style.color = removedCount >= 3 ? 'var(--red)' : 'var(--navy)';
+    }
 
-    const addShardBtn = document.getElementById('btn-admin-add-shard');
-    const removeShardBtn = document.getElementById('btn-admin-remove-shard');
-    if (addShardBtn) addShardBtn.disabled = this.hasFourthShard;
-    if (removeShardBtn) removeShardBtn.disabled = !this.hasFourthShard;
+    // Update each node badge and button
+    ['8081', '8082', '8083'].forEach(port => {
+      const badge = document.getElementById(`badge-node-${port}`);
+      const btn = document.getElementById(`btn-toggle-node-${port}`);
+      const isDead = this.killedNodes.has(port);
+
+      if (badge) {
+        badge.className = isDead ? 'event-pill event-pill-red' : 'event-pill event-pill-green';
+        badge.textContent = isDead ? 'OFFLINE' : 'ONLINE';
+      }
+      if (btn) {
+        if (isDead) {
+          btn.textContent = '↻ Revive';
+          btn.style.color = 'var(--green)';
+          btn.disabled = false;
+        } else {
+          btn.textContent = '⛔ Remove';
+          btn.style.color = 'var(--red)';
+          btn.disabled = (removedCount >= 3) || ((totalNodes - removedCount) <= 1);
+        }
+      }
+    });
+
+    // Node 4 controls
+    const badge4 = document.getElementById('badge-node-8084');
+    const btn4 = document.getElementById('btn-toggle-node-8084');
+    if (badge4 && btn4) {
+      if (!this.hasFourthShard) {
+        badge4.className = 'event-pill event-pill-grey';
+        badge4.textContent = 'OFFLINE';
+        btn4.textContent = '➕ Add Node 4';
+        btn4.style.color = 'var(--accent-blue)';
+        btn4.disabled = false;
+      } else {
+        const isDead = this.killedNodes.has('8084');
+        badge4.className = isDead ? 'event-pill event-pill-red' : 'event-pill event-pill-green';
+        badge4.textContent = isDead ? 'OFFLINE' : 'ONLINE';
+        btn4.textContent = '➖ Remove Node 4';
+        btn4.style.color = 'var(--ink-2)';
+        btn4.disabled = false;
+      }
+    }
 
     this.updateDemoAccountsUI();
   }
@@ -932,7 +971,12 @@ class ErodeBankingApp {
   }
 
   async killNode(port) {
-    const btn = document.getElementById(`btn-admin-kill-${port}`);
+    const totalNodes = this.hasFourthShard ? 4 : 3;
+    if (this.killedNodes.size >= 3 || (totalNodes - this.killedNodes.size) <= 1) {
+      this.showToast('Quorum Protection: Minimum 1 active node required. Cannot remove more than 3 nodes.', 'warn');
+      return;
+    }
+    const btn = document.getElementById(`btn-toggle-node-${port}`);
     if (btn) btn.disabled = true;
     try {
       await api.post(`/admin/nodes/${port}/kill`);
@@ -945,35 +989,42 @@ class ErodeBankingApp {
   }
 
   applyNodeKill(port) {
+    const totalNodes = this.hasFourthShard ? 4 : 3;
+    if (this.killedNodes.size >= 3 || (totalNodes - this.killedNodes.size) <= 1) {
+      this.showToast('Quorum Protection: Minimum 1 active node required. Cannot remove more nodes.', 'warn');
+      return;
+    }
+
     this.killedNodes.add(String(port));
     if (this.ring) this.ring.setKilledNodes(this.killedNodes);
     if (this.saga) this.saga.setKilledNodes(this.killedNodes);
     this.updateBeneficiariesList();
     this.updateClusterControlsUI();
 
+    const shardIdx = (port === '8081' ? '0' : (port === '8082' ? '1' : (port === '8083' ? '2' : '3')));
     const timeline = document.getElementById('admin-failure-timeline');
     if (timeline) {
       timeline.style.display = 'block';
       timeline.innerHTML = `
         <strong>Failure Detection Timeline:</strong><br>
-        t=0s kill signal → t=5.0s probe 1 fail → t=10.0s probe 2 fail →
-        <span style="color: var(--red); font-weight: 700;">t=10.1s node :${port} evicted</span> →
-        <span style="color: var(--green); font-weight: 700;">t=10.2s vnodes migrated</span>
+        t=0s kill signal → t=5.0s probe fail →
+        <span style="color: var(--red); font-weight: 700;">node :${port} (Shard ${shardIdx}) evicted</span> →
+        <span style="color: var(--green); font-weight: 700;">150 vnodes migrated to survivors</span>
       `;
     }
 
     if (this.eventLog) {
       this.eventLog.addEvent({
         action: 'NODE_DOWN',
-        details: `NODE_DOWN · :${port} evicted from hash ring · Shard 1 marked OFFLINE`
+        details: `NODE_DOWN · :${port} (Shard ${shardIdx}) evicted from hash ring · 150 vnodes migrated`
       });
     }
 
-    this.showToast(`Node :${port} killed. Hash ring vnodes redistributed and Shard 1 OFFLINE.`, 'warn');
+    this.showToast(`Node :${port} (Shard ${shardIdx}) removed. Hash ring pointer and vnodes rerouted.`, 'warn');
   }
 
   async reviveNode(port) {
-    const btn = document.getElementById(`btn-admin-revive-${port}`);
+    const btn = document.getElementById(`btn-toggle-node-${port}`);
     if (btn) btn.disabled = true;
     try {
       await api.post(`/admin/nodes/${port}/revive`);
@@ -992,22 +1043,23 @@ class ErodeBankingApp {
     this.updateBeneficiariesList();
     this.updateClusterControlsUI();
 
+    const shardIdx = (port === '8081' ? '0' : (port === '8082' ? '1' : (port === '8083' ? '2' : '3')));
     const timeline = document.getElementById('admin-failure-timeline');
     if (timeline) {
       timeline.innerHTML = `
         <strong style="color: var(--green);">Node Recovery:</strong><br>
-        Node :${port} responded to health check. Re-added to hash ring with 150 virtual slots restored.
+        Node :${port} (Shard ${shardIdx}) restored. 150 virtual slots rebalanced on hash ring.
       `;
     }
 
     if (this.eventLog) {
       this.eventLog.addEvent({
         action: 'NODE_REJOINED',
-        details: `NODE_REJOINED · :${port} restored to ring · Shard 1 marked ONLINE`
+        details: `NODE_REJOINED · :${port} (Shard ${shardIdx}) restored to ring · ONLINE`
       });
     }
 
-    this.showToast(`Node :${port} revived. Consistent hash ring and Shard 1 restored.`, 'success');
+    this.showToast(`Node :${port} revived. Consistent hash ring and Shard ${shardIdx} restored.`, 'success');
   }
 
   async addFourthShard() {
@@ -1157,17 +1209,62 @@ class ErodeBankingApp {
       closeAdminBtn.addEventListener('click', () => adminDrawer.classList.remove('open'));
     }
 
-    const killBtn = document.getElementById('btn-admin-kill-8082');
-    if (killBtn) killBtn.addEventListener('click', () => this.killNode('8082'));
+    // Wire individual per-node toggle buttons
+    ['8081', '8082', '8083'].forEach(port => {
+      const btn = document.getElementById(`btn-toggle-node-${port}`);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          if (this.killedNodes.has(port)) {
+            this.reviveNode(port);
+          } else {
+            this.killNode(port);
+          }
+        });
+      }
+    });
 
-    const reviveBtn = document.getElementById('btn-admin-revive-8082');
-    if (reviveBtn) reviveBtn.addEventListener('click', () => this.reviveNode('8082'));
+    // Node 4 toggle
+    const toggle4Btn = document.getElementById('btn-toggle-node-8084');
+    if (toggle4Btn) {
+      toggle4Btn.addEventListener('click', () => {
+        if (!this.hasFourthShard) {
+          this.addFourthShard();
+        } else {
+          this.removeFourthShard();
+        }
+      });
+    }
 
-    const addShardBtn = document.getElementById('btn-admin-add-shard');
-    if (addShardBtn) addShardBtn.addEventListener('click', () => this.addFourthShard());
+    // Quick dropdown selector
+    const selRemoveBtn = document.getElementById('btn-admin-remove-selected');
+    const selAddBtn = document.getElementById('btn-admin-add-selected');
+    const selNodeDropdown = document.getElementById('admin-select-node');
 
-    const removeShardBtn = document.getElementById('btn-admin-remove-shard');
-    if (removeShardBtn) removeShardBtn.addEventListener('click', () => this.removeFourthShard());
+    if (selRemoveBtn && selNodeDropdown) {
+      selRemoveBtn.addEventListener('click', () => {
+        const port = selNodeDropdown.value;
+        if (port === '8084') {
+          if (this.hasFourthShard) this.removeFourthShard();
+          else this.showToast('Node 4 is already not in the cluster.', 'info');
+        } else {
+          if (!this.killedNodes.has(port)) this.killNode(port);
+          else this.showToast(`Node :${port} is already offline.`, 'info');
+        }
+      });
+    }
+
+    if (selAddBtn && selNodeDropdown) {
+      selAddBtn.addEventListener('click', () => {
+        const port = selNodeDropdown.value;
+        if (port === '8084') {
+          if (!this.hasFourthShard) this.addFourthShard();
+          else this.showToast('Node 4 is already online.', 'info');
+        } else {
+          if (this.killedNodes.has(port)) this.reviveNode(port);
+          else this.showToast(`Node :${port} is already online.`, 'info');
+        }
+      });
+    }
 
     const clearLogBtn = document.getElementById('btn-clear-events');
     if (clearLogBtn) clearLogBtn.addEventListener('click', () => this.eventLog?.clear());

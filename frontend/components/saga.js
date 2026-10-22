@@ -34,7 +34,9 @@ export class SagaVisualizer {
     if (!shard) return false;
     return this.killedNodes.has(shard.port) ||
            this.killedNodes.has(shard.id) ||
+           (shard.id === 'bank-shard-0' && this.killedNodes.has('8081')) ||
            (shard.id === 'bank-shard-1' && this.killedNodes.has('8082')) ||
+           (shard.id === 'bank-shard-2' && this.killedNodes.has('8083')) ||
            (shard.id === 'bank-shard-3' && this.killedNodes.has('8084'));
   }
 
