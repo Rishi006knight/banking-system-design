@@ -35,15 +35,15 @@
         <span>📊 Telemetry</span>
         <span class="telemetry-pill-indicator">● ON</span>
       </button>
+      <button id="btn-admin-gear" class="btn-subtle" style="font-size: 13px; padding: 5px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--navy); border: 1px solid var(--border);" aria-label="Cluster Settings & Admin Drawer" title="Cluster Settings & Failure Simulation">
+        <span>⚙ Settings</span>
+      </button>
       <div id="user-chip-container" style="display: none; align-items: center; gap: 8px;">
         <div class="user-chip">
           <div class="user-chip-dot"></div>
           <span id="user-display-name">Aarav Sharma</span>
           <span id="user-display-account" class="user-account-id">ACC-0000001</span>
         </div>
-        <button id="btn-admin-gear" class="btn-subtle" style="font-size: 15px; padding: 4px 8px; border-radius: 6px;" aria-label="Cluster Admin Drawer" title="Admin Cluster Operations">
-          ⚙
-        </button>
         <button id="btn-signout" class="btn-signout" aria-label="Sign Out">
           Sign Out
         </button>
@@ -257,16 +257,30 @@
     <p style="font-size: 12px; color: var(--ink-2); margin-bottom: 16px;">
       Simulate live node failures, health-check evictions, and scale-out resharding:
     </p>
-    <div style="display: flex; flex-direction: column; gap: 10px;">
-      <button id="btn-admin-kill-8082" class="btn-secondary" style="background: var(--fill-red); color: var(--red); border-color: rgba(214,69,69,0.3); text-align: left; justify-content: flex-start;">
-        ⛔ Kill Node :8082
-      </button>
-      <button id="btn-admin-revive-8082" class="btn-secondary" style="background: var(--fill-green); color: var(--green); border-color: rgba(46,158,91,0.3); text-align: left; justify-content: flex-start;">
-        ↻ Revive Node :8082
-      </button>
-      <button id="btn-admin-add-shard" class="btn-secondary" style="text-align: left; justify-content: flex-start;">
-        ➕ Add 4th Shard (:8084)
-      </button>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div>
+        <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">Node 2 Controls (:8082 / Shard 1)</div>
+        <div style="display: flex; gap: 8px;">
+          <button id="btn-admin-kill-8082" class="btn-secondary" style="flex: 1; background: var(--fill-red); color: var(--red); border-color: rgba(214,69,69,0.3); text-align: center; justify-content: center; font-size: 12px; padding: 8px 6px;">
+            ⛔ Remove Node 2
+          </button>
+          <button id="btn-admin-revive-8082" class="btn-secondary" style="flex: 1; background: var(--fill-green); color: var(--green); border-color: rgba(46,158,91,0.3); text-align: center; justify-content: center; font-size: 12px; padding: 8px 6px;" disabled>
+            ↻ Add / Revive Node 2
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">Node 4 Controls (:8084 / Shard 3)</div>
+        <div style="display: flex; gap: 8px;">
+          <button id="btn-admin-add-shard" class="btn-secondary" style="flex: 1; background: var(--fill-blue); color: var(--accent-blue); border-color: rgba(31,111,209,0.3); text-align: center; justify-content: center; font-size: 12px; padding: 8px 6px;">
+            ➕ Add Node 4
+          </button>
+          <button id="btn-admin-remove-shard" class="btn-secondary" style="flex: 1; background: var(--fill-grey); color: var(--ink-2); border-color: var(--border); text-align: center; justify-content: center; font-size: 12px; padding: 8px 6px;" disabled>
+            ➖ Remove Node 4
+          </button>
+        </div>
+      </div>
     </div>
     <div id="admin-failure-timeline" class="failure-timeline">
     </div>

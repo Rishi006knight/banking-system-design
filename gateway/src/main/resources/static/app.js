@@ -48,6 +48,7 @@ class ErodeBankingApp {
     this.setupTelemetryToggle();
     this.wireEvents();
     this.renderSessionState();
+    this.populateTransferSelect();
 
     this.pollMetrics();
     this.metricsTimer = setInterval(() => this.pollMetrics(), 1000);
@@ -168,11 +169,12 @@ class ErodeBankingApp {
     if (!accountId) return '0';
     if (accountId.includes('2')) return '1';
     if (accountId.includes('4')) return '2';
+    if (accountId.includes('6')) return '3';
     return '0';
   }
 
   getNodeForShard(shardId) {
-    const map = { '0': 'node:8081', '1': 'node:8082', '2': 'node:8083' };
+    const map = { '0': 'node:8081', '1': 'node:8082', '2': 'node:8083', '3': 'node:8084' };
     return map[String(shardId)] || 'node:8081';
   }
 
@@ -314,7 +316,7 @@ class ErodeBankingApp {
     this.initUserState();
     this.updateBalanceUI();
     this.refreshBalance();
-    this.loadBeneficiaries();
+    this.updateBeneficiariesList();
     this.loadBills();
     this.renderHistory();
     this.generateNewIdempotencyKey();
@@ -490,15 +492,62 @@ class ErodeBankingApp {
       return;
     }
 
+    const sfId = this.snowflake ? this.snowflake.generateId('TRF') : `TRF-${Date.now()}`;
+    const srcShard = parseInt(this.getShardForAccount(this.user.accountId), 10);
+    const dstShard = parseInt(this.getShardForAccount(toAcc), 10);
+    const srcPort = `808${srcShard + 1}`;
+    const dstPort = `808${dstShard + 1}`;
+
+    // 3. Shard & Node Availability Validation (2PC Resilience)
+    if (this.killedNodes.has(srcPort)) {
+      this.showToast(`Transfer Failed: Your home Node :${srcPort} (Shard ${srcShard}) is OFFLINE!`, 'error');
+      if (this.eventLog) {
+        this.eventLog.addEvent({
+          action: 'NODE_DOWN',
+          details: `TRANSFER_REJECTED · Source node :${srcPort} offline · Gateway cannot dispatch saga`
+        });
+      }
+      return;
+    }
+
+    if (this.killedNodes.has(dstPort)) {
+      // 2-Phase Commit Saga Abort & Compensating Refund
+      if (this.saga) {
+        this.saga.failSaga(this.user.accountId, toAcc, amount, srcShard, dstShard);
+      }
+      if (this.eventLog) {
+        this.eventLog.addEvent({
+          action: 'TRANSFER_INITIATED',
+          details: `TRANSFER_INITIATED · ${this.user.accountId} → ${toAcc} · ₹${amount} · idem=${idemKey.slice(-8)}`
+        });
+        setTimeout(() => {
+          this.eventLog.addEvent({
+            action: 'NODE_DOWN',
+            details: `CONNECTION_REFUSED · Node :${dstPort} / Shard ${dstShard} unreachable · HTTP 503`
+          });
+        }, 250);
+        setTimeout(() => {
+          this.eventLog.addEvent({
+            action: 'SAGA_ABORTED',
+            details: `2PC_ABORT · Shard ${dstShard} offline · Triggering compensating transaction`
+          });
+        }, 500);
+        setTimeout(() => {
+          this.eventLog.addEvent({
+            action: 'COMPENSATING_REFUND',
+            details: `COMPENSATING_REFUND · ₹${amount} reservation released · Available Balance preserved: ₹${this.currentBalance.toFixed(2)}`
+          });
+        }, 750);
+      }
+      this.showToast(`Transfer Aborted: Destination Node :${dstPort} (Shard ${dstShard}) is OFFLINE. 2PC Saga triggered COMPENSATING REFUND. Balance preserved!`, 'error');
+      return;
+    }
+
     const sendBtn = document.getElementById('btn-send-transfer');
     if (sendBtn) {
       sendBtn.disabled = true;
       sendBtn.textContent = 'Processing Saga...';
     }
-
-    const sfId = this.snowflake ? this.snowflake.generateId('TRF') : `TRF-${Date.now()}`;
-    const srcShard = parseInt(this.getShardForAccount(this.user.accountId), 10);
-    const dstShard = parseInt(this.getShardForAccount(toAcc), 10);
 
     if (this.saga) {
       this.saga.startSaga(this.user.accountId, toAcc, amount, srcShard, dstShard);
@@ -688,24 +737,56 @@ class ErodeBankingApp {
     if (statNet) statNet.textContent = `₹ ${this.currentBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
   }
 
-  loadBeneficiaries() {
-    const list = [
-      { name: 'Diya Patel', acc: 'ACC-0000002', shard: 'Shard 1 (:8082)' },
-      { name: 'Kavya Nair', acc: 'ACC-0000004', shard: 'Shard 2 (:8083)' },
-      { name: 'Saravana Rishi', acc: 'ACC-0000005', shard: 'Shard 0 (:8081)' }
+  getBeneficiariesList() {
+    const base = [
+      { name: 'Diya Patel', acc: 'ACC-0000002', shard: 'Shard 1 (:8082)', port: '8082' },
+      { name: 'Kavya Nair', acc: 'ACC-0000004', shard: 'Shard 2 (:8083)', port: '8083' },
+      { name: 'Saravana Rishi', acc: 'ACC-0000005', shard: 'Shard 0 (:8081)', port: '8081' }
     ];
+    if (this.hasFourthShard) {
+      base.push({ name: 'Meera Krishnan', acc: 'ACC-0000006', shard: 'Shard 3 (:8084)', port: '8084' });
+    }
+    return base;
+  }
+
+  updateBeneficiariesList() {
+    this.loadBeneficiaries();
+    this.populateTransferSelect();
+  }
+
+  loadBeneficiaries() {
+    const list = this.getBeneficiariesList();
     const container = document.getElementById('beneficiaries-list-container');
     if (!container) return;
 
-    container.innerHTML = list.map(b => `
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px;">
-        <div>
-          <div style="font-weight: 700; color: var(--navy); font-size: 13px;">${b.name}</div>
-          <div style="font-size: 11px; font-family: var(--font-mono); color: var(--muted);">${b.acc} · ${b.shard}</div>
+    container.innerHTML = list.map(b => {
+      const isDead = this.killedNodes.has(b.port);
+      return `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: ${isDead ? 'var(--fill-red)' : 'var(--surface)'}; border: 1px solid ${isDead ? 'var(--red)' : 'var(--border)'}; border-radius: 6px; margin-bottom: 8px;">
+          <div>
+            <div style="font-weight: 700; color: ${isDead ? 'var(--red)' : 'var(--navy)'}; font-size: 13px;">
+              ${b.name} ${isDead ? '<span style="font-size: 10px; font-weight: 800; background: var(--fill-red); color: var(--red); padding: 1px 6px; border-radius: 3px; border: 1px solid rgba(214,69,69,0.3);">[⛔ OFFLINE]</span>' : ''}
+            </div>
+            <div style="font-size: 11px; font-family: var(--font-mono); color: var(--muted);">${b.acc} · ${b.shard}</div>
+          </div>
+          <button class="btn-subtle" onclick="window.app.quickTransferTo('${b.acc}')">Send Money ▶</button>
         </div>
-        <button class="btn-subtle" onclick="window.app.quickTransferTo('${b.acc}')">Send Money ▶</button>
-      </div>
-    `).join('');
+      `;
+    }).join('');
+  }
+
+  populateTransferSelect() {
+    const select = document.getElementById('transfer-dest-acc');
+    if (!select) return;
+    const currentVal = select.value;
+    const list = this.getBeneficiariesList();
+    select.innerHTML = list.map(b => {
+      const isDead = this.killedNodes.has(b.port);
+      return `<option value="${b.acc}">${b.name} (${b.acc} · ${b.shard})${isDead ? ' [⛔ OFFLINE]' : ''}</option>`;
+    }).join('');
+    if (currentVal && list.some(b => b.acc === currentVal)) {
+      select.value = currentVal;
+    }
   }
 
   quickTransferTo(acc) {
@@ -816,6 +897,40 @@ class ErodeBankingApp {
     }
   }
 
+  updateClusterControlsUI() {
+    const killBtn = document.getElementById('btn-admin-kill-8082');
+    const reviveBtn = document.getElementById('btn-admin-revive-8082');
+    const is8082Killed = this.killedNodes.has('8082');
+    if (killBtn) killBtn.disabled = is8082Killed;
+    if (reviveBtn) reviveBtn.disabled = !is8082Killed;
+
+    const addShardBtn = document.getElementById('btn-admin-add-shard');
+    const removeShardBtn = document.getElementById('btn-admin-remove-shard');
+    if (addShardBtn) addShardBtn.disabled = this.hasFourthShard;
+    if (removeShardBtn) removeShardBtn.disabled = !this.hasFourthShard;
+
+    this.updateDemoAccountsUI();
+  }
+
+  updateDemoAccountsUI() {
+    document.querySelectorAll('.btn-demo-account').forEach(btn => {
+      const node = btn.dataset.node;
+      const isDead = this.killedNodes.has(node);
+      const nodeSpan = btn.querySelector('.demo-account-node');
+      if (nodeSpan) {
+        if (isDead) {
+          nodeSpan.textContent = `Node (${node}) [⛔ OFFLINE]`;
+          nodeSpan.style.color = 'var(--red)';
+        } else {
+          const map = { '8081': 'Node 1 (:8081)', '8082': 'Node 2 (:8082)', '8083': 'Node 3 (:8083)', '8084': 'Node 4 (:8084)' };
+          nodeSpan.textContent = map[node] || `Node (${node})`;
+          const colors = { '8081': 'var(--accent-blue)', '8082': 'var(--orange)', '8083': 'var(--green)' };
+          nodeSpan.style.color = colors[node] || 'var(--ink)';
+        }
+      }
+    });
+  }
+
   async killNode(port) {
     const btn = document.getElementById(`btn-admin-kill-${port}`);
     if (btn) btn.disabled = true;
@@ -825,13 +940,16 @@ class ErodeBankingApp {
     } catch {
       this.applyNodeKill(port);
     } finally {
-      if (btn) btn.disabled = false;
+      this.updateClusterControlsUI();
     }
   }
 
   applyNodeKill(port) {
     this.killedNodes.add(String(port));
     if (this.ring) this.ring.setKilledNodes(this.killedNodes);
+    if (this.saga) this.saga.setKilledNodes(this.killedNodes);
+    this.updateBeneficiariesList();
+    this.updateClusterControlsUI();
 
     const timeline = document.getElementById('admin-failure-timeline');
     if (timeline) {
@@ -847,11 +965,11 @@ class ErodeBankingApp {
     if (this.eventLog) {
       this.eventLog.addEvent({
         action: 'NODE_DOWN',
-        details: `NODE_DOWN · :${port} evicted from hash ring · 150 vnodes migrated to survivors`
+        details: `NODE_DOWN · :${port} evicted from hash ring · Shard 1 marked OFFLINE`
       });
     }
 
-    this.showToast(`Node :${port} killed. Hash ring vnodes redistributed.`, 'warn');
+    this.showToast(`Node :${port} killed. Hash ring vnodes redistributed and Shard 1 OFFLINE.`, 'warn');
   }
 
   async reviveNode(port) {
@@ -863,13 +981,16 @@ class ErodeBankingApp {
     } catch {
       this.applyNodeRevive(port);
     } finally {
-      if (btn) btn.disabled = false;
+      this.updateClusterControlsUI();
     }
   }
 
   applyNodeRevive(port) {
     this.killedNodes.delete(String(port));
     if (this.ring) this.ring.setKilledNodes(this.killedNodes);
+    if (this.saga) this.saga.setKilledNodes(this.killedNodes);
+    this.updateBeneficiariesList();
+    this.updateClusterControlsUI();
 
     const timeline = document.getElementById('admin-failure-timeline');
     if (timeline) {
@@ -882,11 +1003,11 @@ class ErodeBankingApp {
     if (this.eventLog) {
       this.eventLog.addEvent({
         action: 'NODE_REJOINED',
-        details: `NODE_REJOINED · :${port} restored to ring · 450 vnodes balanced`
+        details: `NODE_REJOINED · :${port} restored to ring · Shard 1 marked ONLINE`
       });
     }
 
-    this.showToast(`Node :${port} revived. Consistent hash ring balanced.`, 'success');
+    this.showToast(`Node :${port} revived. Consistent hash ring and Shard 1 restored.`, 'success');
   }
 
   async addFourthShard() {
@@ -898,20 +1019,70 @@ class ErodeBankingApp {
     } catch {
       this.applyAddShard();
     } finally {
-      if (btn) btn.disabled = false;
+      this.updateClusterControlsUI();
     }
   }
 
   applyAddShard() {
     this.hasFourthShard = true;
     if (this.ring) this.ring.setFourthShard(true);
+    if (this.saga) this.saga.setFourthShard(true);
+    this.updateBeneficiariesList();
+    this.updateClusterControlsUI();
+
+    const timeline = document.getElementById('admin-failure-timeline');
+    if (timeline) {
+      timeline.style.display = 'block';
+      timeline.innerHTML = `
+        <strong style="color: var(--accent-blue);">Scale-Out Resharding:</strong><br>
+        Node 4 (:8084 / Shard 3) registered. Ring expanded from 450 to 600 virtual nodes.
+      `;
+    }
+
     if (this.eventLog) {
       this.eventLog.addEvent({
         action: 'RING_ROUTE',
-        details: '4th Shard (:8084) registered · hash ring expanded from 450 to 600 vnodes'
+        details: 'Node 4 (:8084) registered · hash ring expanded from 450 to 600 vnodes'
       });
     }
-    this.showToast('4th Shard registered! Hash ring expanded to 600 vnodes.', 'success');
+    this.showToast('Node 4 (:8084 / Shard 3) added! Hash ring expanded to 600 vnodes.', 'success');
+  }
+
+  async removeFourthShard() {
+    const btn = document.getElementById('btn-admin-remove-shard');
+    if (btn) btn.disabled = true;
+    try {
+      await api.delete('/admin/shards/3');
+      this.applyRemoveShard();
+    } catch {
+      this.applyRemoveShard();
+    } finally {
+      this.updateClusterControlsUI();
+    }
+  }
+
+  applyRemoveShard() {
+    this.hasFourthShard = false;
+    if (this.ring) this.ring.setFourthShard(false);
+    if (this.saga) this.saga.setFourthShard(false);
+    this.updateBeneficiariesList();
+    this.updateClusterControlsUI();
+
+    const timeline = document.getElementById('admin-failure-timeline');
+    if (timeline) {
+      timeline.innerHTML = `
+        <strong style="color: var(--ink);">Decommissioning:</strong><br>
+        Node 4 (:8084 / Shard 3) decommissioned. Ring rebalanced back to 450 virtual slots.
+      `;
+    }
+
+    if (this.eventLog) {
+      this.eventLog.addEvent({
+        action: 'RING_ROUTE',
+        details: 'Node 4 (:8084) decommissioned · ring resized to 450 vnodes'
+      });
+    }
+    this.showToast('Node 4 (:8084) removed. Hash ring restored to 450 vnodes.', 'info');
   }
 
   switchTab(tabId) {
@@ -995,8 +1166,13 @@ class ErodeBankingApp {
     const addShardBtn = document.getElementById('btn-admin-add-shard');
     if (addShardBtn) addShardBtn.addEventListener('click', () => this.addFourthShard());
 
+    const removeShardBtn = document.getElementById('btn-admin-remove-shard');
+    if (removeShardBtn) removeShardBtn.addEventListener('click', () => this.removeFourthShard());
+
     const clearLogBtn = document.getElementById('btn-clear-events');
     if (clearLogBtn) clearLogBtn.addEventListener('click', () => this.eventLog?.clear());
+
+    this.updateClusterControlsUI();
   }
 }
 

@@ -1,7 +1,6 @@
 export class HashRingVisualizer {
   constructor(container) {
     this.container = container;
-    this.totalVnodes = 450;
     this.activeNode = null;
     this.killedNodes = new Set();
     this.hasFourthShard = false;
@@ -48,21 +47,22 @@ export class HashRingVisualizer {
     const r = 94;
 
     const nodeCount = this.hasFourthShard ? 4 : 3;
-    const vnodesPerNode = Math.floor(450 / nodeCount);
+    const totalVnodes = this.hasFourthShard ? 600 : 450;
+    const vnodesPerNode = 150;
 
     const colors = {
-      '8081': '#1f6fd1', // Blue
-      '8082': '#e8832a', // Orange
-      '8083': '#2e9e5b', // Green
-      '8084': '#8b5cf6'  // Purple (4th shard)
+      '8081': '#1f6fd1', // Blue (Node 1)
+      '8082': '#e8832a', // Orange (Node 2)
+      '8083': '#2e9e5b', // Green (Node 3)
+      '8084': '#8b5cf6'  // Purple (Node 4)
     };
 
     let dotsSvg = '';
-    for (let i = 0; i < 450; i++) {
+    for (let i = 0; i < totalVnodes; i++) {
       const nodeIdx = Math.floor(i / vnodesPerNode);
       const port = `808${nodeIdx + 1}`;
       const isKilled = this.killedNodes.has(port) || this.killedNodes.has(`bank-shard-${nodeIdx}`);
-      let angleDeg = (i / 450) * 360;
+      let angleDeg = (i / totalVnodes) * 360;
       let dotColor = colors[port] || '#1f6fd1';
 
       if (isKilled) {
@@ -99,7 +99,7 @@ export class HashRingVisualizer {
         <span style="font-size: 13px; font-weight: 600; color: var(--ink-2);">nodes</span>
       </div>
       <div class="telemetry-sub-metrics">
-        <span>${this.hasFourthShard ? '600' : '450'} vnodes · 0 key drift · deterministic</span>
+        <span>${totalVnodes} vnodes (${activeNodesCount * 150} active) · 0 key drift</span>
       </div>
       <div style="display: flex; justify-content: center; align-items: center; margin: 4px 0;">
         <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
