@@ -270,10 +270,21 @@ class ErodeBankingApp {
         'diya.patel2': { name: 'Diya Patel', acc: 'ACC-0000002' },
         'kavya.nair4': { name: 'Kavya Nair', acc: 'ACC-0000004' }
       };
-      const demo = accMap[username] || { name: username, acc: 'ACC-0000001' };
+
+      const cleanU = (username || '').toLowerCase().trim();
+      const dirCustomer = BANK_CUSTOMERS_DIRECTORY.find(c =>
+        c.accountId.toLowerCase() === cleanU ||
+        c.name.toLowerCase().replace(/\s+/g, '.').includes(cleanU) ||
+        cleanU.includes(c.accountId.toLowerCase()) ||
+        cleanU.includes(c.name.toLowerCase().split(' ')[0])
+      );
+
+      const demo = dirCustomer
+        ? { name: dirCustomer.name, acc: dirCustomer.accountId }
+        : (accMap[username] || { name: username, acc: 'ACC-0000001' });
 
       this.token = `demo-token-${Date.now()}`;
-      this.user = { id: '1', username, name: demo.name, accountId: demo.acc };
+      this.user = { id: demo.acc.replace(/\D/g, '') || '1', username, name: demo.name, accountId: demo.acc };
       api.setToken(this.token);
       localStorage.setItem('esss_token', this.token);
       localStorage.setItem('esss_user', JSON.stringify(this.user));
@@ -295,6 +306,32 @@ class ErodeBankingApp {
     }
   }
 
+  switchAccount(targetAccountId) {
+    if (!targetAccountId) return;
+    const customer = BANK_CUSTOMERS_DIRECTORY.find(c => c.accountId === targetAccountId);
+    const name = customer ? customer.name : targetAccountId;
+    this.token = `demo-token-${Date.now()}`;
+    this.user = {
+      id: targetAccountId.replace(/\D/g, '') || '1',
+      username: customer ? customer.name.toLowerCase().replace(/\s+/g, '.') : targetAccountId,
+      name,
+      accountId: targetAccountId
+    };
+    api.setToken(this.token);
+    localStorage.setItem('esss_token', this.token);
+    localStorage.setItem('esss_user', JSON.stringify(this.user));
+
+    if (this.eventLog) {
+      this.eventLog.addEvent({
+        action: 'LOGIN_ALLOWED',
+        details: `Switched account to ${name} (${targetAccountId}) · Shard ${this.getShardForAccount(targetAccountId)}`
+      });
+    }
+
+    this.showToast(`Switched account to ${name} (${targetAccountId})`, 'info');
+    this.renderSessionState();
+  }
+
   handleSignout() {
     this.token = null;
     this.user = null;
@@ -313,12 +350,26 @@ class ErodeBankingApp {
     this.renderSessionState();
   }
 
+  populateLoginDirectory() {
+    const select = document.getElementById('login-directory-select');
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Choose Account to Sign In (28 Accounts) --</option>' +
+      BANK_CUSTOMERS_DIRECTORY.map(c => `
+        <option value="${c.accountId}" data-username="${c.name.toLowerCase().replace(/\s+/g, '.')}">
+          ${c.name} (${c.accountId} · Shard ${c.shardId} · ${c.branch})
+        </option>
+      `).join('');
+  }
+
   renderSessionState() {
     const loginView = document.getElementById('login-view');
     const dashView = document.getElementById('dashboard-view');
     const chipBox = document.getElementById('user-chip-container');
     const nameEl = document.getElementById('user-display-name');
     const accEl = document.getElementById('user-display-account');
+    const switcher = document.getElementById('header-account-switcher');
+
+    this.populateLoginDirectory();
 
     if (this.user && this.token) {
       if (loginView) loginView.style.display = 'none';
@@ -327,6 +378,14 @@ class ErodeBankingApp {
 
       if (nameEl) nameEl.textContent = this.user.name;
       if (accEl) accEl.textContent = this.user.accountId;
+
+      if (switcher) {
+        switcher.innerHTML = BANK_CUSTOMERS_DIRECTORY.map(c => `
+          <option value="${c.accountId}" ${c.accountId === this.user.accountId ? 'selected' : ''}>
+            ${c.name} (${c.accountId})
+          </option>
+        `).join('');
+      }
 
       const srcAccInput = document.getElementById('transfer-source-acc');
       if (srcAccInput) srcAccInput.value = `${this.user.name} (${this.user.accountId})`;
@@ -343,6 +402,7 @@ class ErodeBankingApp {
     this.initUserState();
     this.updateBalanceUI();
     this.refreshBalance();
+    this.refreshTransactions();
     this.updateBeneficiariesList();
     this.loadBills();
     this.renderHistory();
@@ -351,6 +411,115 @@ class ErodeBankingApp {
     if (this.ring && this.user) {
       const port = this.getNodeForShard(this.getShardForAccount(this.user.accountId)).replace(/\D/g, '');
       this.ring.routeTo(port, this.user.accountId);
+    }
+  }
+
+  getDefaultBalanceForAccount(accId) {
+    const defaults = {
+      'ACC-0000001': 25420.50,
+      'ACC-0000002': 18750.00,
+      'ACC-0000004': 32100.00
+    };
+    if (defaults[accId] !== undefined) return defaults[accId];
+    const num = parseInt((accId || '').replace(/\D/g, '') || '1', 10);
+    return Math.round((14000.00 + (num * 1250.75)) * 100) / 100;
+  }
+
+  getDefaultTransactionsForAccount(accId, bal) {
+    const shardId = parseInt(this.getShardForAccount(accId), 10);
+    const openingCredit = Math.round(bal * 0.75 * 100) / 100;
+    return [
+      {
+        transactionId: `TRF-${Date.now() - 3600000 * 12}`,
+        description: 'Salary Direct Deposit',
+        type: 'CREDIT',
+        amountInr: openingCredit,
+        balanceAfterInr: bal,
+        shardId: shardId,
+        createdAt: Date.now() - 3600000 * 12
+      }
+    ];
+  }
+
+  creditRecipientAccount(toAcc, amount, sfId, dstShard, remarks = '') {
+    if (!toAcc) return;
+
+    // 1. Recipient balance
+    const recipientBalKey = `esss_balance_${toAcc}`;
+    const savedBal = localStorage.getItem(recipientBalKey);
+    let recipientBal;
+    if (savedBal !== null) {
+      recipientBal = parseFloat(savedBal);
+    } else {
+      recipientBal = this.getDefaultBalanceForAccount(toAcc);
+    }
+    const newRecipientBal = Math.round((recipientBal + amount) * 100) / 100;
+    localStorage.setItem(recipientBalKey, newRecipientBal.toFixed(2));
+
+    // 2. Recipient transactions
+    const recipientTxsKey = `esss_txs_${toAcc}`;
+    const savedTxs = localStorage.getItem(recipientTxsKey);
+    let recipientTxs = [];
+    if (savedTxs) {
+      try {
+        recipientTxs = JSON.parse(savedTxs);
+      } catch {
+        recipientTxs = [];
+      }
+    } else {
+      recipientTxs = this.getDefaultTransactionsForAccount(toAcc, recipientBal);
+    }
+
+    const senderName = this.user?.name || this.user?.accountId || 'Account Holder';
+    const cleanRemarks = (remarks || '').trim();
+    const desc = cleanRemarks
+      ? `Transfer from ${senderName} (${this.user?.accountId || ''}) · ${cleanRemarks}`
+      : `Transfer from ${senderName} (${this.user?.accountId || ''})`;
+
+    const creditTx = {
+      transactionId: sfId ? `CR-${sfId}` : (this.snowflake ? this.snowflake.generateId('TRF') : `TRF-${Date.now()}`),
+      description: desc,
+      type: 'CREDIT',
+      amountInr: amount,
+      balanceAfterInr: newRecipientBal,
+      shardId: dstShard ?? parseInt(this.getShardForAccount(toAcc), 10),
+      createdAt: Date.now()
+    };
+
+    const updatedTxs = [creditTx, ...recipientTxs];
+    localStorage.setItem(recipientTxsKey, JSON.stringify(updatedTxs));
+
+    // 3. If currently logged in as recipient (e.g. same session or active view):
+    if (this.user && this.user.accountId === toAcc) {
+      this.currentBalance = newRecipientBal;
+      this.transactions = updatedTxs;
+      this.updateBalanceUI();
+      this.renderHistory();
+    }
+  }
+
+  async refreshTransactions() {
+    if (!this.user) return;
+    try {
+      const { data } = await api.get(`/accounts/${this.user.accountId}/transactions`);
+      if (Array.isArray(data) && data.length > 0) {
+        const backendTxs = data.map(tx => ({
+          transactionId: tx.transactionId,
+          description: tx.description,
+          type: (tx.type === 'TRANSFER_IN' || tx.type === 'DEPOSIT' || tx.type === 'CREDIT') ? 'CREDIT' : 'DEBIT',
+          amountInr: tx.amountInr ?? (tx.amountCents / 100.0),
+          balanceAfterInr: tx.balanceAfterInr ?? (tx.balanceAfterCents / 100.0),
+          shardId: this.getShardForAccount(this.user.accountId),
+          createdAt: tx.createdAt
+        }));
+
+        const existingIds = new Set(backendTxs.map(t => t.transactionId));
+        this.transactions = [...backendTxs, ...this.transactions.filter(t => !existingIds.has(t.transactionId))];
+        localStorage.setItem(`esss_txs_${this.user.accountId}`, JSON.stringify(this.transactions));
+        this.renderHistory();
+      }
+    } catch {
+      // In offline / standalone demo mode, local state is preserved
     }
   }
 
@@ -363,12 +532,7 @@ class ErodeBankingApp {
     if (savedBal !== null) {
       this.currentBalance = parseFloat(savedBal);
     } else {
-      const defaults = {
-        'ACC-0000001': 25420.50,
-        'ACC-0000002': 18750.00,
-        'ACC-0000004': 32100.00
-      };
-      this.currentBalance = defaults[accId] ?? 25420.50;
+      this.currentBalance = this.getDefaultBalanceForAccount(accId);
       localStorage.setItem(`esss_balance_${accId}`, this.currentBalance.toFixed(2));
     }
 
@@ -381,26 +545,7 @@ class ErodeBankingApp {
         this.transactions = [];
       }
     } else {
-      this.transactions = [
-        {
-          transactionId: 'TRF-17926839485',
-          description: 'Salary Direct Deposit',
-          type: 'CREDIT',
-          amountInr: 25000.00,
-          balanceAfterInr: this.currentBalance,
-          shardId: this.getShardForAccount(accId),
-          createdAt: Date.now() - 3600000 * 8
-        },
-        {
-          transactionId: 'TRF-17926831092',
-          description: 'IMPS Transfer to Diya Patel',
-          type: 'DEBIT',
-          amountInr: 500.00,
-          balanceAfterInr: this.currentBalance - 500.00,
-          shardId: this.getShardForAccount(accId),
-          createdAt: Date.now() - 3600000 * 12
-        }
-      ];
+      this.transactions = this.getDefaultTransactionsForAccount(accId, this.currentBalance);
       localStorage.setItem(`esss_txs_${accId}`, JSON.stringify(this.transactions));
     }
 
@@ -498,6 +643,14 @@ class ErodeBankingApp {
     if (metaEl) {
       metaEl.innerHTML = `Served by: <strong>${node}</strong> · Shard: <strong>${shardId}</strong> · Cache: <strong style="color: var(--green);">HIT (&lt;0.4ms)</strong>`;
     }
+
+    const found = BANK_CUSTOMERS_DIRECTORY.find(c => c.accountId === this.user?.accountId);
+    const catEl = document.getElementById('account-category-display');
+    const ifscEl = document.getElementById('account-ifsc-display');
+    const branchEl = document.getElementById('account-branch-display');
+    if (catEl) catEl.textContent = found ? found.category : 'Retail Platinum Savings';
+    if (ifscEl) ifscEl.textContent = found ? found.ifsc : 'ESSS0001001';
+    if (branchEl) branchEl.textContent = found ? `${found.branch} Branch` : 'Erode Main Branch';
   }
 
   async refreshBalance() {
@@ -695,6 +848,9 @@ class ErodeBankingApp {
           createdAt: Date.now()
         });
 
+        // Credit recipient account balance & transaction history
+        this.creditRecipientAccount(toAcc, amount, sfId, dstShard, remarks);
+
         const remInput = document.getElementById('transfer-remarks');
         if (remInput) remInput.value = '';
       }
@@ -744,6 +900,9 @@ class ErodeBankingApp {
           shardId: srcShard,
           createdAt: Date.now()
         });
+
+        // Credit recipient account balance & transaction history
+        this.creditRecipientAccount(toAcc, amount, sfId, dstShard, remarks);
 
         const remInput = document.getElementById('transfer-remarks');
         if (remInput) remInput.value = '';
@@ -1372,6 +1531,28 @@ class ErodeBankingApp {
         this.handleLogin(u, 'Password@123');
       });
     });
+
+    const loginDirSelect = document.getElementById('login-directory-select');
+    if (loginDirSelect) {
+      loginDirSelect.addEventListener('change', (e) => {
+        if (e.target.value) {
+          const opt = loginDirSelect.options[loginDirSelect.selectedIndex];
+          const u = opt.dataset.username || e.target.value;
+          document.getElementById('login-username').value = u;
+          document.getElementById('login-password').value = 'Password@123';
+          this.handleLogin(u, 'Password@123');
+        }
+      });
+    }
+
+    const headerSwitcher = document.getElementById('header-account-switcher');
+    if (headerSwitcher) {
+      headerSwitcher.addEventListener('change', (e) => {
+        if (e.target.value && (!this.user || e.target.value !== this.user.accountId)) {
+          this.switchAccount(e.target.value);
+        }
+      });
+    }
 
     document.querySelectorAll('.tab-link').forEach(btn => {
       btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));

@@ -125,18 +125,25 @@ public class TransferService {
             long newSrcBal = srcBalance - req.amountCents();
             long dstBal = ((Number) dstQr.firstRow().get("balance_cents")).longValue() + req.amountCents();
 
+            String srcDesc = (req.description() != null && !req.description().isBlank())
+                    ? ("Transfer to " + req.destAccountId() + " (" + req.description() + ")")
+                    : ("Transfer to " + req.destAccountId());
+            String dstDesc = (req.description() != null && !req.description().isBlank())
+                    ? ("Transfer from " + req.sourceAccountId() + " (" + req.description() + ")")
+                    : ("Transfer from " + req.sourceAccountId());
+
             tx.executeUpdate(
                     "INSERT INTO transactions (transaction_id, account_id, type, amount_cents, balance_after_cents, description, idempotency_key, created_at) " +
                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     "TX-" + idGenerator.nextId(), req.sourceAccountId(), "TRANSFER_OUT", req.amountCents(),
-                    newSrcBal, "Transfer to " + req.destAccountId(), idempotencyKey, now
+                    newSrcBal, srcDesc, idempotencyKey, now
             );
 
             tx.executeUpdate(
                     "INSERT INTO transactions (transaction_id, account_id, type, amount_cents, balance_after_cents, description, idempotency_key, created_at) " +
                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     "TX-" + idGenerator.nextId(), req.destAccountId(), "TRANSFER_IN", req.amountCents(),
-                    dstBal, "Transfer from " + req.sourceAccountId(), idempotencyKey, now
+                    dstBal, dstDesc, idempotencyKey, now
             );
 
             // 6. Record completed transfer
@@ -209,11 +216,15 @@ public class TransferService {
             );
 
             // Insert transaction row
+            String srcDesc = (req.description() != null && !req.description().isBlank())
+                    ? ("Cross-shard transfer to " + req.destAccountId() + " (" + req.description() + ")")
+                    : ("Cross-shard transfer to " + req.destAccountId());
+
             tx.executeUpdate(
                     "INSERT INTO transactions (transaction_id, account_id, type, amount_cents, balance_after_cents, description, idempotency_key, created_at) " +
                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     "TX-" + idGenerator.nextId(), req.sourceAccountId(), "TRANSFER_OUT", req.amountCents(),
-                    srcBalance - req.amountCents(), "Cross-shard transfer to " + req.destAccountId(), idempotencyKey, now
+                    srcBalance - req.amountCents(), srcDesc, idempotencyKey, now
             );
 
             // Record Transfer as PENDING
@@ -260,11 +271,15 @@ public class TransferService {
                 );
 
                 // Insert transaction record on destination shard
+                String dstDesc = (req.description() != null && !req.description().isBlank())
+                        ? ("Cross-shard transfer from " + req.sourceAccountId() + " (" + req.description() + ")")
+                        : ("Cross-shard transfer from " + req.sourceAccountId());
+
                 tx.executeUpdate(
                         "INSERT INTO transactions (transaction_id, account_id, type, amount_cents, balance_after_cents, description, idempotency_key, created_at) " +
                                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                         "TX-" + idGenerator.nextId(), req.destAccountId(), "TRANSFER_IN", req.amountCents(),
-                        dstBal, "Cross-shard transfer from " + req.sourceAccountId(), idempotencyKey, now
+                        dstBal, dstDesc, idempotencyKey, now
                 );
 
                 // Notification for destination customer

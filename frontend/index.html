@@ -41,6 +41,8 @@
           <span id="user-display-name">Aarav Sharma</span>
           <span id="user-display-account" class="user-account-id">ACC-0000001</span>
         </div>
+        <select id="header-account-switcher" class="form-select" style="font-size: 11px; padding: 4px 8px; height: 30px; background: var(--surface); color: var(--navy); border: 1px solid var(--border); border-radius: 6px; font-weight: 600; cursor: pointer;" title="Quick switch active account">
+        </select>
         <button id="btn-signout" class="btn-signout" aria-label="Sign Out">
           Sign Out
         </button>
@@ -91,6 +93,12 @@
                 <span class="demo-account-node" style="color: var(--green);">Node 3 (:8083)</span>
               </button>
             </div>
+            <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px;">
+              <label for="login-directory-select" style="font-size: 11px; color: var(--muted); font-weight: 600;">Or sign in as any customer (28 directory accounts):</label>
+              <select id="login-directory-select" class="form-select" style="font-size: 11px; padding: 6px 8px; background: var(--surface); color: var(--navy); border: 1px solid var(--border); border-radius: 6px; font-weight: 600; cursor: pointer;">
+                <option value="">-- Choose Account to Sign In --</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -124,15 +132,15 @@
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
             <div style="background: var(--surface); border: 1px solid var(--border); padding: 12px; border-radius: 6px;">
               <div style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700;">Account Category</div>
-              <div style="font-weight: 700; color: var(--navy); margin-top: 2px;">Retail Platinum Savings</div>
+              <div id="account-category-display" style="font-weight: 700; color: var(--navy); margin-top: 2px;">Retail Platinum Savings</div>
             </div>
             <div style="background: var(--surface); border: 1px solid var(--border); padding: 12px; border-radius: 6px;">
               <div style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700;">IFSC Code</div>
-              <div style="font-weight: 700; font-family: var(--font-mono); color: var(--navy); margin-top: 2px;">ESSS0001001</div>
+              <div id="account-ifsc-display" style="font-weight: 700; font-family: var(--font-mono); color: var(--navy); margin-top: 2px;">ESSS0001001</div>
             </div>
             <div style="background: var(--surface); border: 1px solid var(--border); padding: 12px; border-radius: 6px;">
               <div style="font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700;">Operating Branch</div>
-              <div style="font-weight: 700; color: var(--navy); margin-top: 2px;">Erode Main Branch</div>
+              <div id="account-branch-display" style="font-weight: 700; color: var(--navy); margin-top: 2px;">Erode Main Branch</div>
             </div>
           </div>
         </div>
