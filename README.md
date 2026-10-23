@@ -11,10 +11,11 @@ A complete, high-performance prototype of a **Scalable Online Banking System** d
 ```
 ├── common/        # The 5 Core System Design Components (100% first-principles Java 17)
 ├── data-tools/    # Synthetic banking data generator & shard seeding CLI
-├── bank-service/  # Spring Boot 3 app running on :8081, :8082, :8083 (Saga, KV Cache, Shards)
-├── gateway/       # Custom reverse proxy API Gateway on :8080 (Consistent Hash Ring + Minimal UI)
+├── bank-service/  # Spring Boot 3 app running on :8081, :8082, :8083, :8084 (Saga, KV Cache, Shards)
+├── gateway/       # Custom reverse proxy API Gateway on :8080 (Consistent Hash Ring + Static Assets)
+├── frontend/      # Zero-build NetBanking web application (Vanilla HTML5/CSS3/ES Modules)
 ├── baseline/      # Monolithic single-DB reference application on :8090 (for A/B benchmarking)
-├── data/          # Database shards (bank-shard-0.db, bank-shard-1.db, bank-shard-2.db)
+├── data/          # Database shards (bank-shard-0.db, bank-shard-1.db, bank-shard-2.db, bank-shard-3.db)
 ├── bin/           # Pre-compiled k6 load testing binary (k6.exe)
 ├── loadtest/      # k6 test scripts & matplotlib chart generation scripts
 ├── results/       # Benchmark CSV outputs & generated performance PNG charts
@@ -36,16 +37,39 @@ A complete, high-performance prototype of a **Scalable Online Banking System** d
 | Component | Purpose in Online Banking | Implementation Details |
 |---|---|---|
 | **1. Rate Limiter** | Restrict brute-force login attempts & burst traffic | Custom **Token Bucket** per key in `ConcurrentHashMap`, lazy refill based on elapsed wall-clock time, background sweeper for stale buckets, per-endpoint policies (`LOGIN_STRICT`: 5/min, `TRANSFER_MODERATE`: 30/min, `ENQUIRY_LENIENT`: 120/min), returns HTTP 429 with `Retry-After`. |
-| **2. Consistent Hashing** | Distribute requests/accounts across servers and shards | Custom **`TreeMap` Hash Ring** with 150 Virtual Nodes per physical node using **Murmur3 64-bit** (and MD5). Includes academic comparison with `NaiveModuloRouter` (`hash % N`) showing only **23.36%** key remapping on ring vs **74.54%** on Modulo. |
-| **3. Sharding** | Partition customer, account, and transaction data | `ShardRouter` mapping `accountId` to database shards (`bank-shard-0`, `bank-shard-1`, `bank-shard-2`). Includes `ShardConnection` abstraction supporting local SQLite and Turso/libSQL HTTP `/v2/pipeline`. Dynamic `ShardMigrationService` migrates only remapped accounts while strictly conserving initial financial balances. |
+| **2. Consistent Hashing** | Distribute requests/accounts across servers and shards | Custom **`TreeMap` Hash Ring** with 150 Virtual Nodes per physical node using **Murmur3 64-bit** (and MD5). Includes academic comparison with `NaiveModuloRouter` (`hash % N`) showing only **23.36%** key remapping on ring vs **74.54%** on Modulo. Features persistent pointer needle and clockwise fall-through routing. |
+| **3. Sharding** | Partition customer, account, and transaction data | `ShardRouter` mapping `accountId` to database shards (`bank-shard-0`, `bank-shard-1`, `bank-shard-2`, `bank-shard-3`). Includes `ShardConnection` abstraction supporting local SQLite and Turso/libSQL HTTP `/v2/pipeline`. Dynamic `ShardMigrationService` migrates only remapped accounts while strictly conserving initial financial balances. |
 | **4. Key-Value Store** | In-memory cache for sessions, OTPs, balances, idempotency | Redis-equivalent cache built on `ConcurrentHashMap` with dual eviction (lazy TTL check + active daemon sweeper) and optional LRU capacity cap. Achieves **84–94% hit ratio** and sub-microsecond (**377 ns**) lookup latency. |
 | **5. Unique ID Generator** | Unique transaction IDs for transfers & bill payments | Twitter **Snowflake 64-bit** (41-bit timestamp, 10-bit node ID, 12-bit sequence). Generates **1.6+ million IDs/sec** with **0 collisions** across multi-threaded nodes, featuring built-in clock-regression recovery. |
 
 ---
 
+## Retail NetBanking & Cluster Simulation Features
+
+The user interface delivers a production-grade retail NetBanking experience coupled with real-time distributed system telemetry:
+
+* **28-Customer Directory across 4 Shards (`BANK_CUSTOMERS_DIRECTORY`)**:
+  Realistic Indian banking identities (`ACC-0000001` through `ACC-0000028`) distributed across Shards 0, 1, 2, and 3 (`:8081`, `:8082`, `:8083`, `:8084`) with IFSC codes and branches (Erode, Coimbatore, Chennai, Salem, Bangalore, etc.).
+* **Dynamic Beneficiary Management**:
+  Interactive **"+ Add Beneficiary"** modal supporting 1-click addition from the 28-customer directory or custom payee registration with instant cluster ring verification and dropdown synchronization.
+* **Instant Account Deposit (+ ₹1,000 to ₹50,000)**:
+  Direct deposit modal supporting multiple payment channels (UPI, Instant IMPS, Cash Deposit Machine, NEFT/RTGS) with real-time balance updates, Snowflake ID generation (`DEP-...`), and immutable ledger CREDIT statements.
+* **Optional Remarks / Purpose for Fund Transfers**:
+  Annotate transfers with purpose (e.g., "Monthly Rent", "Dinner Treat"), embedded in the double-entry transaction record and displayed in the statement.
+* **Variable BBPS Utility Bills (Up to 5 Bills Max)**:
+  Dynamic utility and card bills per account (TNEB electricity, broadband, municipal water tax, gas cylinder, credit card) with automated clearing settlement and debit execution.
+* **Quorum-Protected Admin Cluster Drawer**:
+  - Remove/revive up to 3 individual nodes (`:8081`, `:8082`, `:8083`) with quorum safety (minimum 1 active node enforced).
+  - Dynamic scale-out with **Node 4 (`:8084` / Shard 3)** expanding the ring from 450 to 600 virtual nodes.
+  - Live Consistent Hash Ring needle pointer visualization showing instantaneous traffic rerouting upon node eviction.
+* **Live Telemetry Stream**:
+  Toggleable right-hand panel visualizing Token Bucket replenishment, 2-Phase Saga cross-shard settlements, KV store RAM hits, Snowflake ID bit decomposition, and live audit event logs.
+
+---
+
 ## Quick Start & Evaluation Demo
 
-### 1. Start All 5 System Instances (1 Command):
+### 1. Start All System Instances (1 Command):
 ```powershell
 .\powershell.bat -File scripts/start-all.ps1
 ```
@@ -70,9 +94,11 @@ GATEWAY_URL=http://localhost:8080
 The frontend automatically detects `GATEWAY_URL`, `?gateway=...` query parameter, or `localStorage.getItem('GATEWAY_URL')`. If the gateway is offline, it safely renders in cached demo mode.
 
 * Click **"Aarav Sharma (ACC-0000001)"** &rarr; **"Sign In to Account"**.
-* View live response trace badges: `→ gateway:8080 · routed → node:8082 · shard:1 · cache:HIT · 1.2ms`.
-* Execute cross-shard transfers with live 2-Phase Saga step visualizer and Idempotency suppression.
-* Use the **⚙ Admin Drawer** to test `[Kill :8082]`, `[Revive :8082]`, and `[Add 4th Shard]` with live animated hash ring migration!
+* View live response trace badges: `→ gateway:8080 · routed → node:8081 · shard:0 · cache:HIT · 0.4ms`.
+* Test **"+ Deposit Money"** to credit funds via UPI or IMPS and view the updated balance and ledger statement.
+* Go to **"Beneficiaries"** &rarr; **"+ Add Beneficiary"** and select any of the 28 pre-configured accounts.
+* Execute cross-shard transfers with optional **Remarks** and live 2-Phase Saga step visualizer.
+* Use the **⚙ Admin Drawer** to test `[Remove :8082]`, `[Revive :8082]`, and `[➕ Add Node 4]` with live animated hash ring migration!
 
 ### 3. Run Automated Benchmarks & Generate Charts (1 Command):
 ```powershell
@@ -100,3 +126,4 @@ The frontend automatically detects `GATEWAY_URL`, `?gateway=...` query parameter
 * **Financial Ledger Conservation:** 0.00 balance drift across all tests and migrations.
 
 For complete architectural details, performance graphs, and viva voce preparation, consult [`docs/report.md`](file:///d:/projects/banking/docs/report.md) and [`docs/demo-script.md`](file:///d:/projects/banking/docs/demo-script.md).
+
