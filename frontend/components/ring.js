@@ -94,13 +94,20 @@ export class HashRingVisualizer {
       this.lastRoutedText = `<span style="color: var(--red);">⛔ :${port} down</span> → <span style="color: var(--green); font-weight: 700;">Pointer REROUTED to :${successor}</span>`;
     } else {
       this.activeNode = port;
+      const allPorts = this.hasFourthShard ? ['8081', '8082', '8083', '8084'] : ['8081', '8082', '8083'];
+      const nodeIdx = allPorts.indexOf(String(port));
+      const nodeCount = allPorts.length;
+      const sectorSpan = 360 / nodeCount;
+      const baseAngle = (nodeIdx !== -1 ? nodeIdx : 0) * sectorSpan;
+
       let hash = 0x811c9dc5;
       for (let i = 0; i < (key || 'acc').length; i++) {
         hash ^= key.charCodeAt(i);
         hash = Math.imul(hash, 0x01000193);
       }
-      this.arrowAngle = Math.abs(hash) % 360;
-      this.lastRoutedText = `Routed key <span style="font-weight: 700; color: var(--navy);">${key.slice(0, 11)}</span> → :${port}`;
+      const tokenOffset = Math.abs(hash) % Math.floor(sectorSpan * 0.75);
+      this.arrowAngle = baseAngle + (sectorSpan * 0.12) + tokenOffset;
+      this.lastRoutedText = `Routed key <span style="font-weight: 700; color: var(--navy);">${key.slice(0, 11)}</span> → Node ${nodeIdx + 1} (:${port})`;
     }
 
     this.render();

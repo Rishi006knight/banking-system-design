@@ -194,8 +194,23 @@ class ErodeBankingApp {
     if (!accountId) return '0';
     const found = BANK_CUSTOMERS_DIRECTORY.find(c => c.accountId === accountId);
     if (found) return String(found.shardId);
+
+    // Check registered beneficiaries (in case user added custom payee on Shard 3)
+    try {
+      const bList = this.getBeneficiariesList();
+      const ben = bList.find(b => b.acc === accountId);
+      if (ben) {
+        if (ben.shard && ben.shard.includes('3')) return '3';
+        if (ben.port === '8084') return '3';
+        const match = (ben.shard || '').match(/\d+/);
+        if (match) return match[0];
+      }
+    } catch {
+      // ignore
+    }
+
     const num = parseInt(String(accountId).replace(/\D/g, '') || '0', 10);
-    return String(num % 3);
+    return String(num % (this.hasFourthShard ? 4 : 3));
   }
 
   isPortAlive(port) {
@@ -1044,14 +1059,10 @@ class ErodeBankingApp {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // If any cached beneficiary was previously associated with Shard 3, regenerate cleanly
-          const hasStaleShard3 = parsed.some(b => b.shard === 'Shard 3' || b.port === '8084');
-          if (!hasStaleShard3) {
-            return parsed.map(b => ({
-              ...b,
-              shard: (b.shard || '').replace(/\s*\(:808\d\)/g, '').trim()
-            }));
-          }
+          return parsed.map(b => ({
+            ...b,
+            shard: (b.shard || '').replace(/\s*\(:808\d\)/g, '').trim()
+          }));
         }
       } catch {
         // Fall back to generate
@@ -1286,8 +1297,8 @@ class ErodeBankingApp {
     const removedCount = this.killedNodes.size;
     const counterEl = document.getElementById('admin-removal-counter');
     if (counterEl) {
-      counterEl.textContent = `${removedCount} / 3 removed`;
-      counterEl.style.color = removedCount >= 3 ? 'var(--red)' : 'var(--navy)';
+      counterEl.textContent = `${removedCount} / ${totalNodes} removed`;
+      counterEl.style.color = (totalNodes - removedCount) <= 1 ? 'var(--red)' : 'var(--navy)';
     }
 
     // Update each node badge and button
@@ -1448,7 +1459,7 @@ class ErodeBankingApp {
   }
 
   async addFourthShard() {
-    const btn = document.getElementById('btn-admin-add-shard');
+    const btn = document.getElementById('btn-toggle-node-8084');
     if (btn) btn.disabled = true;
     try {
       await api.post('/admin/shards');
@@ -1464,6 +1475,21 @@ class ErodeBankingApp {
     this.hasFourthShard = true;
     if (this.ring) this.ring.setFourthShard(true);
     if (this.saga) this.saga.setFourthShard(true);
+
+    // Auto-add demo scale-out beneficiary if not present
+    if (this.user) {
+      const bList = this.getBeneficiariesList();
+      if (!bList.some(b => b.acc === 'ACC-0000030')) {
+        bList.push({
+          name: 'Pradeep Kumar (Scale-Out Demo)',
+          acc: 'ACC-0000030',
+          shard: 'Shard 3',
+          port: '8084'
+        });
+        localStorage.setItem(`esss_beneficiaries_${this.user.accountId}`, JSON.stringify(bList));
+      }
+    }
+
     this.updateBeneficiariesList();
     this.updateClusterControlsUI();
 
@@ -1486,7 +1512,7 @@ class ErodeBankingApp {
   }
 
   async removeFourthShard() {
-    const btn = document.getElementById('btn-admin-remove-shard');
+    const btn = document.getElementById('btn-toggle-node-8084');
     if (btn) btn.disabled = true;
     try {
       await api.delete('/admin/shards/3');
