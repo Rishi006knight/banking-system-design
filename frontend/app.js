@@ -12,29 +12,29 @@ export const BANK_CUSTOMERS_DIRECTORY = [
   { accountId: 'ACC-0000003', name: 'Rohan Verma', shardId: 0, port: '8081', branch: 'Chennai Anna Nagar', ifsc: 'ESSS0001003', category: 'Corporate Salary' },
   { accountId: 'ACC-0000004', name: 'Kavya Nair', shardId: 2, port: '8083', branch: 'Salem Fairlands', ifsc: 'ESSS0001004', category: 'Platinum Savings' },
   { accountId: 'ACC-0000005', name: 'Saravana Rishi', shardId: 0, port: '8081', branch: 'Erode Perundurai', ifsc: 'ESSS0001005', category: 'Executive Current' },
-  { accountId: 'ACC-0000006', name: 'Meera Krishnan', shardId: 3, port: '8084', branch: 'Bangalore Indiranagar', ifsc: 'ESSS0001006', category: 'NRI Prime' },
+  { accountId: 'ACC-0000006', name: 'Meera Krishnan', shardId: 1, port: '8082', branch: 'Bangalore Indiranagar', ifsc: 'ESSS0001006', category: 'NRI Prime' },
   { accountId: 'ACC-0000007', name: 'Aditya Kulkarni', shardId: 1, port: '8082', branch: 'Mumbai Bandra', ifsc: 'ESSS0001007', category: 'Regular Savings' },
   { accountId: 'ACC-0000008', name: 'Ananya Iyer', shardId: 2, port: '8083', branch: 'Madurai Simmakkal', ifsc: 'ESSS0001008', category: 'Platinum Savings' },
   { accountId: 'ACC-0000009', name: 'Vikram Singhania', shardId: 0, port: '8081', branch: 'Kolkata Park Street', ifsc: 'ESSS0001009', category: 'Wealth Privilege' },
   { accountId: 'ACC-0000010', name: 'Pooja Hegde', shardId: 1, port: '8082', branch: 'Mangalore Hampankatta', ifsc: 'ESSS0001010', category: 'Retail Savings' },
   { accountId: 'ACC-0000011', name: 'Karthik Subramaniam', shardId: 2, port: '8083', branch: 'Tiruchirappalli Cantt', ifsc: 'ESSS0001011', category: 'Corporate Salary' },
-  { accountId: 'ACC-0000012', name: 'Sneha Reddy', shardId: 3, port: '8084', branch: 'Hyderabad Hitec City', ifsc: 'ESSS0001012', category: 'Gold Savings' },
+  { accountId: 'ACC-0000012', name: 'Sneha Reddy', shardId: 0, port: '8081', branch: 'Hyderabad Hitec City', ifsc: 'ESSS0001012', category: 'Gold Savings' },
   { accountId: 'ACC-0000013', name: 'Rajeshwari Sundaram', shardId: 0, port: '8081', branch: 'Tirunelveli Junction', ifsc: 'ESSS0001013', category: 'Senior Citizen Prime' },
   { accountId: 'ACC-0000014', name: 'Nikhil Bansal', shardId: 1, port: '8082', branch: 'Delhi Connaught Place', ifsc: 'ESSS0001014', category: 'Platinum Savings' },
   { accountId: 'ACC-0000015', name: 'Swati Deshmukh', shardId: 2, port: '8083', branch: 'Pune Kothrud', ifsc: 'ESSS0001015', category: 'Retail Savings' },
-  { accountId: 'ACC-0000016', name: 'Arjun Balakrishnan', shardId: 3, port: '8084', branch: 'Kochi Marine Drive', ifsc: 'ESSS0001016', category: 'Executive Current' },
+  { accountId: 'ACC-0000016', name: 'Arjun Balakrishnan', shardId: 1, port: '8082', branch: 'Kochi Marine Drive', ifsc: 'ESSS0001016', category: 'Executive Current' },
   { accountId: 'ACC-0000017', name: 'Priya Nambiar', shardId: 0, port: '8081', branch: 'Calicut Palayam', ifsc: 'ESSS0001017', category: 'Regular Savings' },
   { accountId: 'ACC-0000018', name: 'Harish Madhavan', shardId: 1, port: '8082', branch: 'Vellore Fort Area', ifsc: 'ESSS0001018', category: 'Gold Savings' },
   { accountId: 'ACC-0000019', name: 'Divya Venkataraman', shardId: 2, port: '8083', branch: 'Thanjavur Old Bus Stand', ifsc: 'ESSS0001019', category: 'Platinum Savings' },
-  { accountId: 'ACC-0000020', name: 'Manoj Chandrasekaran', shardId: 3, port: '8084', branch: 'Hosur Sipcot', ifsc: 'ESSS0001020', category: 'Corporate Salary' },
+  { accountId: 'ACC-0000020', name: 'Manoj Chandrasekaran', shardId: 2, port: '8083', branch: 'Hosur Sipcot', ifsc: 'ESSS0001020', category: 'Corporate Salary' },
   { accountId: 'ACC-0000021', name: 'Ritu Sengupta', shardId: 0, port: '8081', branch: 'Bhubaneswar Saheed Nagar', ifsc: 'ESSS0001021', category: 'Retail Savings' },
   { accountId: 'ACC-0000022', name: 'Siddharth Menon', shardId: 1, port: '8082', branch: 'Thrissur Round', ifsc: 'ESSS0001022', category: 'Wealth Privilege' },
   { accountId: 'ACC-0000023', name: 'Tanvi Joshi', shardId: 2, port: '8083', branch: 'Ahmedabad Navrangpura', ifsc: 'ESSS0001023', category: 'Gold Savings' },
-  { accountId: 'ACC-0000024', name: 'Ashwin Ramachandran', shardId: 3, port: '8084', branch: 'Mysore Saraswathipuram', ifsc: 'ESSS0001024', category: 'Executive Current' },
+  { accountId: 'ACC-0000024', name: 'Ashwin Ramachandran', shardId: 0, port: '8081', branch: 'Mysore Saraswathipuram', ifsc: 'ESSS0001024', category: 'Executive Current' },
   { accountId: 'ACC-0000025', name: 'Lavanya Narayanan', shardId: 0, port: '8081', branch: 'Kanchipuram Gandhi Road', ifsc: 'ESSS0001025', category: 'Platinum Savings' },
   { accountId: 'ACC-0000026', name: 'Gaurav Chatterjee', shardId: 1, port: '8082', branch: 'Guwahati Pan Bazar', ifsc: 'ESSS0001026', category: 'Regular Savings' },
   { accountId: 'ACC-0000027', name: 'Shalini Pillai', shardId: 2, port: '8083', branch: 'Trivandrum Kowdiar', ifsc: 'ESSS0001027', category: 'Senior Citizen Prime' },
-  { accountId: 'ACC-0000028', name: 'Pranav Srinivasan', shardId: 3, port: '8084', branch: 'Dindigul Bus Stand', ifsc: 'ESSS0001028', category: 'Corporate Salary' }
+  { accountId: 'ACC-0000028', name: 'Pranav Srinivasan', shardId: 1, port: '8082', branch: 'Dindigul Bus Stand', ifsc: 'ESSS0001028', category: 'Corporate Salary' }
 ];
 
 class ErodeBankingApp {
@@ -194,15 +194,33 @@ class ErodeBankingApp {
     if (!accountId) return '0';
     const found = BANK_CUSTOMERS_DIRECTORY.find(c => c.accountId === accountId);
     if (found) return String(found.shardId);
-    if (accountId.includes('2')) return '1';
-    if (accountId.includes('4')) return '2';
-    if (accountId.includes('6')) return '3';
-    return '0';
+    const num = parseInt(String(accountId).replace(/\D/g, '') || '0', 10);
+    return String(num % 3);
+  }
+
+  isPortAlive(port) {
+    const p = String(port);
+    // Node 4 (:8084 / Shard 3) is purely for demo scale-out resharding; offline by default unless dynamic 4th shard is provisioned
+    if (p === '8084' && !this.hasFourthShard) {
+      return false;
+    }
+    return !this.killedNodes.has(p);
+  }
+
+  isNodeAlive(shardId) {
+    const sId = parseInt(shardId, 10);
+    const port = `808${sId + 1}`;
+    return this.isPortAlive(port);
   }
 
   getNodeForShard(shardId) {
-    const map = { '0': 'node:8081', '1': 'node:8082', '2': 'node:8083', '3': 'node:8084' };
-    return map[String(shardId)] || 'node:8081';
+    const map = { '0': 'Node 1', '1': 'Node 2', '2': 'Node 3', '3': 'Node 4' };
+    return map[String(shardId)] || 'Node 1';
+  }
+
+  getPortForShard(shardId) {
+    const map = { '0': '8081', '1': '8082', '2': '8083', '3': '8084' };
+    return map[String(shardId)] || '8081';
   }
 
   async handleLogin(username, password) {
@@ -367,7 +385,6 @@ class ErodeBankingApp {
     const chipBox = document.getElementById('user-chip-container');
     const nameEl = document.getElementById('user-display-name');
     const accEl = document.getElementById('user-display-account');
-    const switcher = document.getElementById('header-account-switcher');
 
     this.populateLoginDirectory();
 
@@ -378,14 +395,6 @@ class ErodeBankingApp {
 
       if (nameEl) nameEl.textContent = this.user.name;
       if (accEl) accEl.textContent = this.user.accountId;
-
-      if (switcher) {
-        switcher.innerHTML = BANK_CUSTOMERS_DIRECTORY.map(c => `
-          <option value="${c.accountId}" ${c.accountId === this.user.accountId ? 'selected' : ''}>
-            ${c.name} (${c.accountId})
-          </option>
-        `).join('');
-      }
 
       const srcAccInput = document.getElementById('transfer-source-acc');
       if (srcAccInput) srcAccInput.value = `${this.user.name} (${this.user.accountId})`;
@@ -409,7 +418,7 @@ class ErodeBankingApp {
     this.generateNewIdempotencyKey();
 
     if (this.ring && this.user) {
-      const port = this.getNodeForShard(this.getShardForAccount(this.user.accountId)).replace(/\D/g, '');
+      const port = this.getPortForShard(this.getShardForAccount(this.user.accountId));
       this.ring.routeTo(port, this.user.accountId);
     }
   }
@@ -671,8 +680,8 @@ class ErodeBankingApp {
       this.currentBalance = Number(inr);
       localStorage.setItem(`esss_balance_${this.user.accountId}`, this.currentBalance.toFixed(2));
 
-      const servedBy = headers.get('X-Served-By') || data.servedBy || this.getNodeForShard(this.getShardForAccount(this.user.accountId));
       const shard = headers.get('X-Shard') || data.shard || this.getShardForAccount(this.user.accountId);
+      const servedBy = this.getNodeForShard(shard);
       const cacheHit = headers.get('X-Cache-Hit') === 'true' || headers.get('X-Cache-Hit') === 'HIT';
 
       const metaEl = document.getElementById('balance-meta-display');
@@ -681,7 +690,8 @@ class ErodeBankingApp {
       }
 
       this.updateBalanceUI();
-      if (this.ring) this.ring.routeTo(servedBy, this.user.accountId);
+      const port = this.getPortForShard(shard);
+      if (this.ring) this.ring.routeTo(port, this.user.accountId);
       if (this.kvStore) this.kvStore.recordRequest(cacheHit, latency);
 
       if (this.eventLog) {
@@ -693,8 +703,8 @@ class ErodeBankingApp {
     } catch {
       this.updateBalanceUI();
       const shardId = this.getShardForAccount(this.user.accountId);
-      const node = this.getNodeForShard(shardId);
-      if (this.ring) this.ring.routeTo(node, this.user.accountId);
+      const port = this.getPortForShard(shardId);
+      if (this.ring) this.ring.routeTo(port, this.user.accountId);
       if (this.kvStore) this.kvStore.recordRequest(true, 0.4);
     } finally {
       if (btn) btn.textContent = '↻ Refresh';
@@ -747,8 +757,8 @@ class ErodeBankingApp {
     const dstPort = `808${dstShard + 1}`;
 
     // 3. Shard & Node Availability Validation (2PC Resilience)
-    if (this.killedNodes.has(srcPort)) {
-      this.showToast(`Transfer Failed: Your home Node :${srcPort} (Shard ${srcShard}) is OFFLINE!`, 'error');
+    if (!this.isPortAlive(srcPort)) {
+      this.showToast(`Transfer Failed: Your home Node (${this.getNodeForShard(srcShard)} · Shard ${srcShard}) is OFFLINE!`, 'error');
       if (this.eventLog) {
         this.eventLog.addEvent({
           action: 'NODE_DOWN',
@@ -758,7 +768,7 @@ class ErodeBankingApp {
       return;
     }
 
-    if (this.killedNodes.has(dstPort)) {
+    if (!this.isPortAlive(dstPort)) {
       // 2-Phase Commit Saga Abort & Compensating Refund
       if (this.saga) {
         this.saga.failSaga(this.user.accountId, toAcc, amount, srcShard, dstShard);
@@ -787,7 +797,7 @@ class ErodeBankingApp {
           });
         }, 750);
       }
-      this.showToast(`Transfer Aborted: Destination Node :${dstPort} (Shard ${dstShard}) is OFFLINE. 2PC Saga triggered COMPENSATING REFUND. Balance preserved!`, 'error');
+      this.showToast(`Transfer Aborted: Destination Node (${this.getNodeForShard(dstShard)} · Shard ${dstShard}) is OFFLINE. 2PC Saga triggered COMPENSATING REFUND. Balance preserved!`, 'error');
       return;
     }
 
@@ -997,6 +1007,28 @@ class ErodeBankingApp {
     if (statNet) statNet.textContent = `₹ ${this.currentBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
   }
 
+  generateBeneficiariesForAccount(accId) {
+    const num = parseInt((accId || '').replace(/\D/g, '') || '1', 10);
+    // Number of beneficiaries varies up to 3 (1, 2, or 3) across accounts
+    const count = 1 + ((num * 7) % 3);
+
+    const available = BANK_CUSTOMERS_DIRECTORY.filter(c => c.accountId !== accId);
+    const startIdx = (num * 5 + 1) % available.length;
+
+    const beneficiaries = [];
+    for (let i = 0; i < count; i++) {
+      const c = available[(startIdx + i) % available.length];
+      beneficiaries.push({
+        name: c.name,
+        acc: c.accountId,
+        shard: `Shard ${c.shardId}`,
+        branch: c.branch,
+        port: `808${c.shardId + 1}`
+      });
+    }
+    return beneficiaries;
+  }
+
   getBeneficiariesList() {
     if (!this.user) return [];
     const accId = this.user.accountId;
@@ -1005,37 +1037,23 @@ class ErodeBankingApp {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          // If any cached beneficiary was previously associated with Shard 3, regenerate cleanly
+          const hasStaleShard3 = parsed.some(b => b.shard === 'Shard 3' || b.port === '8084');
+          if (!hasStaleShard3) {
+            return parsed.map(b => ({
+              ...b,
+              shard: (b.shard || '').replace(/\s*\(:808\d\)/g, '').trim()
+            }));
+          }
         }
       } catch {
-        // Fall back to defaults
+        // Fall back to generate
       }
     }
 
-    const defaults = BANK_CUSTOMERS_DIRECTORY
-      .filter(c => c.accountId !== accId && ['ACC-0000002', 'ACC-0000004', 'ACC-0000005', 'ACC-0000006'].includes(c.accountId))
-      .slice(0, 3)
-      .map(c => ({
-        name: c.name,
-        acc: c.accountId,
-        shard: `Shard ${c.shardId} (:808${c.shardId + 1})`,
-        port: `808${c.shardId + 1}`
-      }));
-
-    if (this.hasFourthShard) {
-      const node4Cust = BANK_CUSTOMERS_DIRECTORY.find(c => c.shardId === 3 && c.accountId !== accId);
-      if (node4Cust && !defaults.some(d => d.acc === node4Cust.accountId)) {
-        defaults.push({
-          name: node4Cust.name,
-          acc: node4Cust.accountId,
-          shard: `Shard 3 (:8084)`,
-          port: '8084'
-        });
-      }
-    }
-
-    localStorage.setItem(`esss_beneficiaries_${accId}`, JSON.stringify(defaults));
-    return defaults;
+    const beneficiaries = this.generateBeneficiariesForAccount(accId);
+    localStorage.setItem(`esss_beneficiaries_${accId}`, JSON.stringify(beneficiaries));
+    return beneficiaries;
   }
 
   updateBeneficiariesList() {
@@ -1089,7 +1107,7 @@ class ErodeBankingApp {
     const newBeneficiary = {
       name: cleanName,
       acc: cleanAcc,
-      shard: `Shard ${sId} (:${port})`,
+      shard: `Shard ${sId}`,
       port: port
     };
 
@@ -1101,7 +1119,7 @@ class ErodeBankingApp {
     if (this.eventLog) {
       this.eventLog.addEvent({
         action: 'BENEFICIARY_ADDED',
-        details: `BENEFICIARY_ADDED · ${cleanName} (${cleanAcc}) · Shard ${sId} (:${port}) mapped to ring`
+        details: `BENEFICIARY_ADDED · ${cleanName} (${cleanAcc}) · Shard ${sId} registered`
       });
     }
 
@@ -1119,7 +1137,7 @@ class ErodeBankingApp {
     if (!container) return;
 
     container.innerHTML = list.map(b => {
-      const isDead = this.killedNodes.has(b.port);
+      const isDead = !this.isPortAlive(b.port);
       return `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: ${isDead ? 'var(--fill-red)' : 'var(--surface)'}; border: 1px solid ${isDead ? 'var(--red)' : 'var(--border)'}; border-radius: 6px; margin-bottom: 8px;">
           <div>
@@ -1140,7 +1158,7 @@ class ErodeBankingApp {
     const currentVal = select.value;
     const list = this.getBeneficiariesList();
     select.innerHTML = list.map(b => {
-      const isDead = this.killedNodes.has(b.port);
+      const isDead = !this.isPortAlive(b.port);
       return `<option value="${b.acc}">${b.name} (${b.acc} · ${b.shard})${isDead ? ' [⛔ OFFLINE]' : ''}</option>`;
     }).join('');
     if (currentVal && list.some(b => b.acc === currentVal)) {
@@ -1523,15 +1541,6 @@ class ErodeBankingApp {
       });
     }
 
-    document.querySelectorAll('.btn-demo-account').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const u = btn.dataset.username;
-        document.getElementById('login-username').value = u;
-        document.getElementById('login-password').value = 'Password@123';
-        this.handleLogin(u, 'Password@123');
-      });
-    });
-
     const loginDirSelect = document.getElementById('login-directory-select');
     if (loginDirSelect) {
       loginDirSelect.addEventListener('change', (e) => {
@@ -1541,15 +1550,6 @@ class ErodeBankingApp {
           document.getElementById('login-username').value = u;
           document.getElementById('login-password').value = 'Password@123';
           this.handleLogin(u, 'Password@123');
-        }
-      });
-    }
-
-    const headerSwitcher = document.getElementById('header-account-switcher');
-    if (headerSwitcher) {
-      headerSwitcher.addEventListener('change', (e) => {
-        if (e.target.value && (!this.user || e.target.value !== this.user.accountId)) {
-          this.switchAccount(e.target.value);
         }
       });
     }

@@ -41,8 +41,6 @@
           <span id="user-display-name">Aarav Sharma</span>
           <span id="user-display-account" class="user-account-id">ACC-0000001</span>
         </div>
-        <select id="header-account-switcher" class="form-select" style="font-size: 11px; padding: 4px 8px; height: 30px; background: var(--surface); color: var(--navy); border: 1px solid var(--border); border-radius: 6px; font-weight: 600; cursor: pointer;" title="Quick switch active account">
-        </select>
         <button id="btn-signout" class="btn-signout" aria-label="Sign Out">
           Sign Out
         </button>
@@ -68,36 +66,15 @@
               Sign In
             </button>
           </form>
-          <div class="quick-demo-section">
-            <div class="quick-demo-title">Quick Demo Customers</div>
-            <div class="demo-buttons-stack">
-              <button type="button" class="btn-demo-account" data-username="aarav.sharma1" data-acc="ACC-0000001" data-node="8081">
-                <div>
-                  <div class="demo-account-name">Aarav Sharma</div>
-                  <div class="demo-account-sub">ACC-0000001 · Shard 0</div>
-                </div>
-                <span class="demo-account-node" style="color: var(--accent-blue);">Node 1 (:8081)</span>
-              </button>
-              <button type="button" class="btn-demo-account" data-username="diya.patel2" data-acc="ACC-0000002" data-node="8082">
-                <div>
-                  <div class="demo-account-name">Diya Patel</div>
-                  <div class="demo-account-sub">ACC-0000002 · Shard 1</div>
-                </div>
-                <span class="demo-account-node" style="color: var(--orange);">Node 2 (:8082)</span>
-              </button>
-              <button type="button" class="btn-demo-account" data-username="kavya.nair4" data-acc="ACC-0000004" data-node="8083">
-                <div>
-                  <div class="demo-account-name">Kavya Nair</div>
-                  <div class="demo-account-sub">ACC-0000004 · Shard 2</div>
-                </div>
-                <span class="demo-account-node" style="color: var(--green);">Node 3 (:8083)</span>
-              </button>
-            </div>
-            <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px;">
-              <label for="login-directory-select" style="font-size: 11px; color: var(--muted); font-weight: 600;">Or sign in as any customer (28 directory accounts):</label>
-              <select id="login-directory-select" class="form-select" style="font-size: 11px; padding: 6px 8px; background: var(--surface); color: var(--navy); border: 1px solid var(--border); border-radius: 6px; font-weight: 600; cursor: pointer;">
-                <option value="">-- Choose Account to Sign In --</option>
-              </select>
+          <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border);">
+            <label for="login-directory-select" style="font-size: 12px; color: var(--navy); font-weight: 700; display: block; margin-bottom: 6px;">
+              Select Demo Customer to Sign In
+            </label>
+            <select id="login-directory-select" class="form-select" style="width: 100%; font-size: 13px; padding: 10px 12px; background: var(--surface); color: var(--navy); border: 1px solid var(--border); border-radius: 6px; font-weight: 600; cursor: pointer;">
+              <option value="">-- Choose Account from Customer Directory (28 Accounts) --</option>
+            </select>
+            <div style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+              Instant access across all 4 database shards and branches
             </div>
           </div>
         </div>
@@ -126,7 +103,7 @@
             <div class="balance-label">Available Balance</div>
             <div id="balance-amount-display" class="balance-amount">₹ 25,420.50</div>
             <div id="balance-meta-display" class="balance-meta">
-              Served by: <strong>node:8081</strong> · Shard: <strong>0</strong> · Cache: <strong style="color: var(--green);">HIT (0.4ms)</strong>
+              Served by: <strong>Node 1</strong> · Shard: <strong>0</strong> · Cache: <strong style="color: var(--green);">HIT (0.4ms)</strong>
             </div>
           </div>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
@@ -417,12 +394,12 @@
               <input type="text" id="beneficiary-custom-acc" class="form-input" placeholder="ACC-0000006" style="font-family: var(--font-mono);" maxlength="16" />
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label" for="beneficiary-custom-shard">Target Shard / Node</label>
+              <label class="form-label" for="beneficiary-custom-shard">Target Shard</label>
               <select id="beneficiary-custom-shard" class="form-input">
-                <option value="0">Shard 0 (:8081)</option>
-                <option value="1">Shard 1 (:8082)</option>
-                <option value="2">Shard 2 (:8083)</option>
-                <option value="3">Shard 3 (:8084)</option>
+                <option value="0">Shard 0 (Erode Main / Primary)</option>
+                <option value="1">Shard 1 (Coimbatore / Secondary)</option>
+                <option value="2">Shard 2 (Salem / Tertiary)</option>
+                <option value="3">Shard 3 (Dynamic Scale-Out Demo Node)</option>
               </select>
             </div>
           </div>
