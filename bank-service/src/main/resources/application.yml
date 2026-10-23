@@ -14,9 +14,9 @@ banking:
   shards:
     count: ${SHARD_COUNT:3}
     virtual-nodes: 150
-    # Shard database configuration (Local SQLite / Distributed SQL):
-    # url: ${TURSO_DATABASE_URL:http://localhost:8080}
-    # auth-token: ${TURSO_AUTH_TOKEN:}
+    # Shard database configuration (Turso Cloud with Local SQLite fallback):
+    url: ${TURSO_DATABASE_URL:https://banking-rishi006knight.aws-ap-south-1.turso.io}
+    auth-token: ${TURSO_AUTH_TOKEN:eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3OTI3MjA2MzgsImlkIjoiMDFhMTVlNzctNjMwMS03NTY2LWEyZDktNzgyZDZhOTdlZDQyIiwia2lkIjoiUk1JODM3Y1dFWmVtbEEtRjc0S3VPOW92Mm1kcXFHZS1GRnl2dFNwcWdHWSIsInJpZCI6IjkzNTJkMzNhLTBiMjItNGJlOC04M2M5LWU5NzYzYTBkOGQ3MCJ9.uBibRlXWXLPEX8F_3aUfqydeGQf6prI4kl6i_SEldFe8igPgNysfh9Tyt5XvMW_vdPHL0GYaM-_uydkZ0XYaAQ}
   cache:
     session-ttl-millis: 900000      # 15 minutes
     balance-ttl-millis: 60000       # 1 minute

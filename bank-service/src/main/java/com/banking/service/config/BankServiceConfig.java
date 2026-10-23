@@ -18,6 +18,8 @@ import java.io.File;
 @Configuration
 public class BankServiceConfig {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(BankServiceConfig.class);
+
     @Value("${banking.node-id:1}")
     private long nodeId;
 
@@ -43,29 +45,41 @@ public class BankServiceConfig {
     public ShardRouter shardRouter() {
         ShardRouter router = new ShardRouter(virtualNodes);
 
-        if (tursoUrl != null && !tursoUrl.isBlank()) {
-            // Cloud Turso / Remote libSQL endpoint
-            for (int i = 0; i < shardCount; i++) {
-                String shardId = "bank-shard-" + i;
-                LibSqlHttpShardConnection conn = new LibSqlHttpShardConnection(tursoUrl, tursoAuthToken);
-                router.addShard(new Shard(shardId, "Turso Shard " + i, conn));
+        File dir = new File(dataDir);
+        if (!dir.exists() && new File("..", dataDir).exists()) {
+            dir = new File("..", dataDir);
+        }
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        boolean hasTurso = tursoUrl != null && !tursoUrl.isBlank();
+
+        for (int i = 0; i < shardCount; i++) {
+            String shardId = "bank-shard-" + i;
+            String dbFile = new File(dir, shardId + ".db").getAbsolutePath();
+            LocalSqliteShardConnection localConn = new LocalSqliteShardConnection("jdbc:sqlite:" + dbFile);
+            ShardSchema.initializeSchema(localConn);
+
+            if (hasTurso) {
+                try {
+                    LibSqlHttpShardConnection tursoConn = new LibSqlHttpShardConnection(tursoUrl, tursoAuthToken);
+                    if (tursoConn.isHealthy()) {
+                        ShardSchema.initializeSchema(tursoConn);
+                        FallbackShardConnection fallbackConn = new FallbackShardConnection(tursoConn, localConn, shardId);
+                        router.addShard(new Shard(shardId, "Turso (Local Fallback) Shard " + i, fallbackConn));
+                        log.info("Initialized shard {} with Turso Cloud primary and local SQLite fallback", shardId);
+                        continue;
+                    } else {
+                        log.warn("Turso endpoint unhealthy for {}. Using local SQLite fallback.", shardId);
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to initialize Turso for {}: {}. Falling back to local SQLite.", shardId, e.getMessage());
+                }
             }
-        } else {
-            // Local SQLite / sqld file-based shards
-            File dir = new File(dataDir);
-            if (!dir.exists() && new File("..", dataDir).exists()) {
-                dir = new File("..", dataDir);
-            }
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
-            for (int i = 0; i < shardCount; i++) {
-                String shardId = "bank-shard-" + i;
-                String dbFile = new File(dir, shardId + ".db").getAbsolutePath();
-                LocalSqliteShardConnection conn = new LocalSqliteShardConnection("jdbc:sqlite:" + dbFile);
-                ShardSchema.initializeSchema(conn);
-                router.addShard(new Shard(shardId, "Local Shard " + i, conn));
-            }
+
+            router.addShard(new Shard(shardId, "Local Shard " + i, localConn));
+            log.info("Initialized shard {} with local SQLite", shardId);
         }
 
         return router;
