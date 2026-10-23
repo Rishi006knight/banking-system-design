@@ -769,6 +769,9 @@ class ErodeBankingApp {
     }
 
     if (!this.isPortAlive(dstPort)) {
+      if (this.ring) {
+        this.ring.routeTo(dstPort, toAcc);
+      }
       // 2-Phase Commit Saga Abort & Compensating Refund
       if (this.saga) {
         this.saga.failSaga(this.user.accountId, toAcc, amount, srcShard, dstShard);
@@ -809,6 +812,10 @@ class ErodeBankingApp {
 
     if (this.saga) {
       this.saga.startSaga(this.user.accountId, toAcc, amount, srcShard, dstShard);
+    }
+
+    if (this.ring) {
+      this.ring.routeTo(dstPort, toAcc);
     }
 
     if (this.eventLog) {

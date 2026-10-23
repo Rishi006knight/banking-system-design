@@ -21,9 +21,15 @@ export class HashRingVisualizer {
     this.render();
   }
 
+  isNodeAlive(port) {
+    const p = String(port);
+    if (p === '8084' && !this.hasFourthShard) return false;
+    return !this.killedNodes.has(p);
+  }
+
   getAliveNodes() {
     const all = this.hasFourthShard ? ['8081', '8082', '8083', '8084'] : ['8081', '8082', '8083'];
-    return all.filter(port => !this.killedNodes.has(port));
+    return all.filter(port => this.isNodeAlive(port));
   }
 
   updateActivePointer() {
@@ -34,7 +40,7 @@ export class HashRingVisualizer {
     }
 
     // If current activeNode is killed, find clockwise successor among alive nodes
-    if (this.killedNodes.has(this.activeNode)) {
+    if (!this.isNodeAlive(this.activeNode)) {
       const all = this.hasFourthShard ? ['8081', '8082', '8083', '8084'] : ['8081', '8082', '8083'];
       const deadIdx = all.indexOf(this.activeNode);
       let successor = alive[0];
@@ -71,7 +77,7 @@ export class HashRingVisualizer {
     const port = String(nodeId).replace(/\D/g, '') || '8081';
     const alive = this.getAliveNodes();
 
-    if (this.killedNodes.has(port)) {
+    if (!this.isNodeAlive(port)) {
       // Find clockwise fall-through successor
       const all = this.hasFourthShard ? ['8081', '8082', '8083', '8084'] : ['8081', '8082', '8083'];
       const deadIdx = all.indexOf(port);
