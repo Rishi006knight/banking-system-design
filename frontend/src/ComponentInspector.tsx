@@ -395,8 +395,8 @@ export const ComponentInspector: React.FC<ComponentInspectorProps> = ({
         <div className="inspector-title">
           <span className="inspector-icon">⚙️</span>
           <div>
-            <h3>Component Architecture Laboratory</h3>
-            <div className="inspector-sub">Interactive Deep-Dive & Live Mechanics Simulator</div>
+            <h3>Distributed Architecture Console</h3>
+            <div className="inspector-sub">Interactive Infrastructure Mechanics & Live Telemetry</div>
           </div>
         </div>
 
@@ -410,11 +410,11 @@ export const ComponentInspector: React.FC<ComponentInspectorProps> = ({
       {/* Component Navigation Tabs */}
       <div className="inspector-tabs-row">
         {[
-          { id: 1, label: 'Comp 1: Hash Ring', icon: '🌐' },
-          { id: 2, label: 'Comp 2: Token Limiter', icon: '🛡️' },
-          { id: 3, label: 'Comp 3: Shards & Saga', icon: '🔄' },
-          { id: 4, label: 'Comp 4: KV Cache', icon: '⚡' },
-          { id: 5, label: 'Comp 5: Snowflake IDs', icon: '🆔' }
+          { id: 1, label: 'Hash Ring Router', icon: '🌐' },
+          { id: 2, label: 'Security & Rate Shield', icon: '🛡️' },
+          { id: 3, label: 'Distributed Database', icon: '🔄' },
+          { id: 4, label: 'Performance Cache', icon: '⚡' },
+          { id: 5, label: 'Reference Engine', icon: '🆔' }
         ].map((tab) => (
           <button
             key={tab.id}

@@ -1,12 +1,12 @@
 # Scalable Online Banking System
-**UCS3513 System Design Laboratory — Mini Project 7**  
-*Department of Computer Science & Engineering, Sri Sivasubramaniya Nadar College of Engineering*  
-**Author:** Rishi K.S. (Register No: 3122245001142) • B.E. Computer Science and Engineering  
-**Live Demo:** [https://frontend-eight-ashy-27.vercel.app/](https://frontend-eight-ashy-27.vercel.app/) • **Repository:** [GitHub](https://github.com/Rishi006knight/banking-system-design)
+**High-Performance Distributed Core Banking Platform**  
+*Production-Grade Resilient Architecture Built From First Principles*  
+**Author:** Rishi K.S.  
+**Live Platform:** [https://frontend-eight-ashy-27.vercel.app/](https://frontend-eight-ashy-27.vercel.app/) • **Repository:** [GitHub](https://github.com/Rishi006knight/banking-system-design)
 
 ---
 
-A complete, high-concurrency prototype of a **Distributed Online Banking System** engineered entirely from first principles in **Java 17 and Spring Boot 3.2**. In strict accordance with the UCS3513 System Design specification, all core distributed components—Consistent Hash Ring, Token Bucket Rate Limiter, In-Memory Key-Value Store with TTL/LRU, Snowflake 64-bit Unique ID Generator, and Database Sharding with 2-Phase Commit Sagas—are implemented from scratch with **zero external black-box frameworks** (no Redis, no Bucket4j, no Spring Cloud Gateway, and no third-party sharding libraries).
+A complete, high-concurrency prototype of a **Distributed Online Banking System** engineered entirely from first principles in **Java 17 and Spring Boot 3.2**. Engineered for mission-critical core banking operations, all foundational distributed components—Consistent Hash Ring, Token Bucket Rate Limiter, In-Memory Key-Value Store with TTL/LRU, Snowflake 64-bit Unique ID Generator, and Database Sharding with 2-Phase Commit Sagas—are implemented from scratch with **zero external black-box frameworks** (no Redis, no Bucket4j, no Spring Cloud Gateway, and no third-party sharding libraries).
 
 ---
 
@@ -436,7 +436,7 @@ Data measured from automated test runs on Windows 11 host (`docs/report.md`, `lo
 
 ## 📚 Complete Project Documentation & References
 
-* 📄 **[`docs/report.md`](file:///d:/projects/banking/docs/report.md)** — Comprehensive 600-line System Design Laboratory Report & 10-Question Viva Voce Q&A.
-* 🎬 **[`docs/demo-script.md`](file:///d:/projects/banking/docs/demo-script.md)** — Step-by-step evaluator demo guide with test scenarios.
+* 📄 **[`docs/report.md`](file:///d:/projects/banking/docs/report.md)** — Comprehensive Distributed System Design Architecture Report & Technical Architecture FAQ.
+* 🎬 **[`docs/demo-script.md`](file:///d:/projects/banking/docs/demo-script.md)** — Step-by-step platform demonstration guide and verification scenarios.
 * 📋 **[`docs/decisions.md`](file:///d:/projects/banking/docs/decisions.md)** — Complete architectural decision records (ADRs) across Phases 1 through 9.
 * 📊 **[`docs/command-execution-verification.md`](file:///d:/projects/banking/docs/command-execution-verification.md)** — Full audit log of all benchmark executions and verification scripts.

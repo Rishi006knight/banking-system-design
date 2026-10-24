@@ -28,12 +28,12 @@
       <span class="brand-name">Erode SSS Bank</span>
     </a>
     <div class="top-bar-controls">
-      <button id="btn-telemetry-toggle" class="telemetry-toggle-btn is-active" aria-label="Toggle distributed system telemetry sidebar" title="Toggle Telemetry Sidebar">
-        <span>📊 Telemetry</span>
+      <button id="btn-telemetry-toggle" class="telemetry-toggle-btn is-active" aria-label="Toggle system observability sidebar" title="Toggle System Observability">
+        <span>⚡ Live Metrics</span>
         <span class="telemetry-pill-indicator">● ON</span>
       </button>
-      <button id="btn-admin-gear" class="btn-subtle" style="font-size: 13px; padding: 5px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--navy); border: 1px solid var(--border);" aria-label="Cluster Settings & Admin Drawer" title="Cluster Settings & Failure Simulation">
-        <span>⚙ Settings</span>
+      <button id="btn-admin-gear" class="btn-subtle" style="font-size: 13px; padding: 5px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--navy); border: 1px solid var(--border);" aria-label="Cluster Settings & Admin Drawer" title="Cluster Management & Failover Operations">
+        <span>⚙ Cluster Ops</span>
       </button>
       <div id="user-chip-container" style="display: none; align-items: center; gap: 8px;">
         <div class="user-chip">
@@ -68,13 +68,13 @@
           </form>
           <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border);">
             <label for="login-directory-select" style="font-size: 12px; color: var(--navy); font-weight: 700; display: block; margin-bottom: 6px;">
-              Select Demo Customer to Sign In
+              Select Account Profile to Sign In
             </label>
             <select id="login-directory-select" class="form-select" style="width: 100%; font-size: 13px; padding: 10px 12px; background: var(--surface); color: var(--navy); border: 1px solid var(--border); border-radius: 6px; font-weight: 600; cursor: pointer;">
               <option value="">-- Choose Account from Customer Directory (28 Accounts) --</option>
             </select>
             <div style="font-size: 11px; color: var(--muted); margin-top: 6px;">
-              Instant access across all 4 database shards and branches
+              Instant authenticated access across all banking branches
             </div>
           </div>
         </div>
@@ -103,7 +103,7 @@
             <div class="balance-label">Available Balance</div>
             <div id="balance-amount-display" class="balance-amount">₹ 25,420.50</div>
             <div id="balance-meta-display" class="balance-meta">
-              Served by: <strong>Node 1</strong> · Shard: <strong>0</strong> · Cache: <strong style="color: var(--green);">HIT (0.4ms)</strong>
+              Primary Server: <strong>Node 1</strong> · Fast Cache: <strong style="color: var(--green);">Active (0.4ms)</strong>
             </div>
           </div>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
@@ -225,7 +225,7 @@
         </div>
       </div>
     </section>
-    <aside id="telemetry-panel" class="telemetry-panel" aria-label="Distributed System Telemetry">
+    <aside id="telemetry-panel" class="telemetry-panel" aria-label="System Metrics & Observability">
       <div id="card-hash-ring" class="telemetry-card"></div>
       <div id="card-token-bucket" class="telemetry-card"></div>
       <div id="card-shards-saga" class="telemetry-card"></div>
@@ -235,7 +235,7 @@
         <div class="telemetry-card-top">
           <div class="telemetry-title-group">
             <span class="telemetry-status-dot" style="background: var(--accent-blue);"></span>
-            <span>Live Event Log</span>
+            <span>Real-Time Audit Log</span>
           </div>
           <button id="btn-clear-events" class="btn-subtle" style="font-size: 11px; padding: 2px 6px;">Clear</button>
         </div>
@@ -243,18 +243,18 @@
       </div>
     </aside>
   </main>
-  <aside id="admin-drawer" class="admin-drawer" aria-label="Admin Cluster Control Drawer">
+  <aside id="admin-drawer" class="admin-drawer" aria-label="Cluster Operations Drawer">
     <div class="admin-drawer-head">
       <h3 style="font-size: 15px; font-weight: 800; color: var(--navy);">Cluster Operations</h3>
       <button id="btn-close-admin-drawer" class="btn-subtle" style="font-weight: 800;">✕</button>
     </div>
     <p style="font-size: 12px; color: var(--ink-2); margin-bottom: 16px;">
-      Simulate live node failures, health-check evictions, and scale-out resharding:
+      Manage cluster server nodes, failover routing, and scale-out capacity:
     </p>
     <div style="background: var(--fill-blue); border: 1px solid rgba(31,111,209,0.2); border-radius: 6px; padding: 8px 10px; margin-bottom: 12px; font-size: 11.5px;">
-      <div style="font-weight: 700; color: var(--navy);">Cluster Quorum & Removal Control</div>
+      <div style="font-weight: 700; color: var(--navy);">Cluster Availability Control</div>
       <div style="color: var(--ink-2); margin-top: 2px;">
-        Choose any node to remove or add (<strong id="admin-removal-counter">0 / 3 removed</strong>).
+        Manage active node status (<strong id="admin-removal-counter">All 3 Primary Nodes Online</strong>).
       </div>
     </div>
 
@@ -263,44 +263,44 @@
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px;">
         <div>
           <div style="font-weight: 700; color: var(--navy); font-size: 12px;">Node 1 (:8081)</div>
-          <div style="font-size: 10px; font-family: var(--font-mono); color: var(--muted);">Shard 0 · 150 vnodes</div>
+          <div style="font-size: 10px; font-family: var(--font-mono); color: var(--muted);">Primary Server · Active</div>
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
           <span id="badge-node-8081" class="event-pill event-pill-green">ONLINE</span>
-          <button id="btn-toggle-node-8081" class="btn-subtle" style="font-size: 11px; padding: 3px 8px;">⛔ Remove</button>
+          <button id="btn-toggle-node-8081" class="btn-subtle" style="font-size: 11px; padding: 3px 8px;">⛔ Take Offline</button>
         </div>
       </div>
 
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px;">
         <div>
           <div style="font-weight: 700; color: var(--navy); font-size: 12px;">Node 2 (:8082)</div>
-          <div style="font-size: 10px; font-family: var(--font-mono); color: var(--muted);">Shard 1 · 150 vnodes</div>
+          <div style="font-size: 10px; font-family: var(--font-mono); color: var(--muted);">Secondary Server · Active</div>
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
           <span id="badge-node-8082" class="event-pill event-pill-green">ONLINE</span>
-          <button id="btn-toggle-node-8082" class="btn-subtle" style="font-size: 11px; padding: 3px 8px;">⛔ Remove</button>
+          <button id="btn-toggle-node-8082" class="btn-subtle" style="font-size: 11px; padding: 3px 8px;">⛔ Take Offline</button>
         </div>
       </div>
 
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px;">
         <div>
           <div style="font-weight: 700; color: var(--navy); font-size: 12px;">Node 3 (:8083)</div>
-          <div style="font-size: 10px; font-family: var(--font-mono); color: var(--muted);">Shard 2 · 150 vnodes</div>
+          <div style="font-size: 10px; font-family: var(--font-mono); color: var(--muted);">Tertiary Server · Active</div>
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
           <span id="badge-node-8083" class="event-pill event-pill-green">ONLINE</span>
-          <button id="btn-toggle-node-8083" class="btn-subtle" style="font-size: 11px; padding: 3px 8px;">⛔ Remove</button>
+          <button id="btn-toggle-node-8083" class="btn-subtle" style="font-size: 11px; padding: 3px 8px;">⛔ Take Offline</button>
         </div>
       </div>
 
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px;">
         <div>
           <div style="font-weight: 700; color: var(--navy); font-size: 12px;">Node 4 (:8084)</div>
-          <div style="font-size: 10px; font-family: var(--font-mono); color: var(--muted);">Shard 3 · Scale-Out</div>
+          <div style="font-size: 10px; font-family: var(--font-mono); color: var(--muted);">Expansion Server · Standby</div>
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
           <span id="badge-node-8084" class="event-pill event-pill-grey">OFFLINE</span>
-          <button id="btn-toggle-node-8084" class="btn-subtle" style="font-size: 11px; padding: 3px 8px; color: var(--accent-blue); font-weight: 700;">➕ Add Node 4</button>
+          <button id="btn-toggle-node-8084" class="btn-subtle" style="font-size: 11px; padding: 3px 8px; color: var(--accent-blue); font-weight: 700;">➕ Provision Node 4</button>
         </div>
       </div>
     </div>
@@ -399,7 +399,7 @@
                 <option value="0">Shard 0 (Erode Main / Primary)</option>
                 <option value="1">Shard 1 (Coimbatore / Secondary)</option>
                 <option value="2">Shard 2 (Salem / Tertiary)</option>
-                <option value="3">Shard 3 (Dynamic Scale-Out Demo Node)</option>
+                <option value="3">Shard 3 (Scale-Out Expansion Node)</option>
               </select>
             </div>
           </div>

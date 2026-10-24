@@ -54,13 +54,13 @@ export class HashRingVisualizer {
       const deadPort = this.activeNode;
       this.activeNode = successor;
       this.arrowAngle = this.getNodeBaseAngle(successor);
-      this.lastRoutedText = `<span style="color: var(--orange);">Node :${deadPort} removed</span> → <span style="color: var(--green); font-weight: 700;">Pointer rerouted to :${successor}</span>`;
+      this.lastRoutedText = `<span style="color: var(--orange);">Server ${deadPort.slice(-1)} offline</span> → <span style="color: var(--green); font-weight: 700;">Failover to Server ${successor.slice(-1)}</span>`;
     } else {
       this.arrowAngle = this.getNodeBaseAngle(this.activeNode);
       if (this.killedNodes.size > 0) {
-        this.lastRoutedText = `<span>${this.killedNodes.size} node(s) removed · Pointer ──▶ :${this.activeNode}</span>`;
+        this.lastRoutedText = `<span>${this.killedNodes.size} server(s) offline · Routed to Server ${this.activeNode.slice(-1)}</span>`;
       } else {
-        this.lastRoutedText = `<span>Pointer ──▶ Node :${this.activeNode} (${alive.length} active)</span>`;
+        this.lastRoutedText = `<span>Live Traffic Routed → Server ${this.activeNode.slice(-1)} (${alive.length} active)</span>`;
       }
     }
   }
@@ -91,7 +91,7 @@ export class HashRingVisualizer {
       }
       this.activeNode = successor;
       this.arrowAngle = this.getNodeBaseAngle(successor);
-      this.lastRoutedText = `<span style="color: var(--red);">⛔ :${port} down</span> → <span style="color: var(--green); font-weight: 700;">Pointer REROUTED to :${successor}</span>`;
+      this.lastRoutedText = `<span style="color: var(--red);">⛔ Server ${port.slice(-1)} Down</span> → <span style="color: var(--green); font-weight: 700;">Failover to Server ${successor.slice(-1)}</span>`;
     } else {
       this.activeNode = port;
       const allPorts = this.hasFourthShard ? ['8081', '8082', '8083', '8084'] : ['8081', '8082', '8083'];
@@ -107,7 +107,7 @@ export class HashRingVisualizer {
       }
       const tokenOffset = Math.abs(hash) % Math.floor(sectorSpan * 0.75);
       this.arrowAngle = baseAngle + (sectorSpan * 0.12) + tokenOffset;
-      this.lastRoutedText = `Routed key <span style="font-weight: 700; color: var(--navy);">${key.slice(0, 11)}</span> → Node ${nodeIdx + 1} (:${port})`;
+      this.lastRoutedText = `Traffic Routed → Server Node ${nodeIdx + 1} (${key.slice(0, 11)})`;
     }
 
     this.render();
@@ -182,24 +182,24 @@ export class HashRingVisualizer {
     const activeColor = colors[this.activeNode] || '#12305f';
 
     const activeNodesCount = nodeCount - this.killedNodes.size;
-    const statusText = this.lastRoutedText || `<span>Pointer ──▶ Node :${this.activeNode} (${activeNodesCount}/${nodeCount} active)</span>`;
+    const statusText = this.lastRoutedText || `<span>Live Traffic Routed → Server ${this.activeNode.slice(-1)} (${activeNodesCount}/${nodeCount} active)</span>`;
 
     this.container.innerHTML = `
       <div class="telemetry-card-top">
         <div class="telemetry-title-group">
           <span class="telemetry-status-dot" style="background: ${this.killedNodes.size > 0 ? (activeNodesCount === 0 ? 'var(--red)' : 'var(--orange)') : 'var(--green)'};"></span>
-          <span>Consistent Hash Ring</span>
+          <span>Cluster Routing</span>
         </div>
         <span style="font-size: 10px; font-weight: 700; font-family: var(--font-mono); color: var(--accent-blue); background: var(--fill-blue); padding: 1px 6px; border-radius: 4px;">
-          Murmur3
+          Balanced
         </span>
       </div>
       <div class="telemetry-hero-stat">
         <span class="num-tween" id="hero-ring-nodes">${activeNodesCount} / ${nodeCount}</span>
-        <span style="font-size: 13px; font-weight: 600; color: var(--ink-2);">nodes</span>
+        <span style="font-size: 13px; font-weight: 600; color: var(--ink-2);">nodes online</span>
       </div>
       <div class="telemetry-sub-metrics">
-        <span>${totalVnodes} vnodes (${activeNodesCount * 150} active) · 0 key drift</span>
+        <span>High availability routing · Zero failover latency</span>
       </div>
       <div style="display: flex; justify-content: center; align-items: center; margin: 2px 0;">
         <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">

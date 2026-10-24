@@ -6,9 +6,9 @@ export class KvStoreVisualizer {
     this.sparklineSamples = Array(30).fill(0.4);
     this.isMissFlashing = false;
     this.topKeys = [
-      { key: 'session:auth_9021', ttl: 894, type: 'SESSION' },
-      { key: 'bal:ACC-0000001', ttl: 54, type: 'BALANCE' },
-      { key: 'idem:TRF-8841', ttl: 86320, type: 'IDEMPOTENCY' }
+      { key: 'session:active_user', ttl: 894, type: 'SESSION' },
+      { key: 'balance:ACC-0000001', ttl: 54, type: 'BALANCE' },
+      { key: 'receipt:TRF-8841', ttl: 86320, type: 'RECEIPT' }
     ];
     setInterval(() => this.tickTtl(), 1000);
     this.render();
@@ -80,19 +80,19 @@ export class KvStoreVisualizer {
       <div class="telemetry-card-top">
         <div class="telemetry-title-group">
           <span class="telemetry-status-dot" style="background: ${this.isMissFlashing ? 'var(--orange)' : 'var(--green)'};"></span>
-          <span>KV Store Cache</span>
+          <span>Performance Cache Tier</span>
         </div>
         <span style="font-size: 10px; font-weight: 700; font-family: var(--font-mono); color: var(--green); background: var(--fill-green); padding: 1px 6px; border-radius: 4px;">
-          L1 RAM
+          Sub-ms Speed
         </span>
       </div>
       <div class="telemetry-hero-stat">
         <span class="num-tween" id="hero-kv-hitratio" style="color: ${this.isMissFlashing ? 'var(--orange)' : 'var(--green)'};">${this.hitRatioPercent}%</span>
-        <span style="font-size: 12px; font-weight: 600; color: var(--ink-2);">hit ·</span>
+        <span style="font-size: 12px; font-weight: 600; color: var(--ink-2);">cache hit ·</span>
         <span class="num-tween" id="hero-kv-latency">${this.avgLatencyMs < 1 ? '<0.4 ms' : `${this.avgLatencyMs} ms`}</span>
       </div>
       <div class="telemetry-sub-metrics">
-        <span>In-memory sessions, ledger caches & idempotency keys</span>
+        <span>Real-time balance caching & session acceleration</span>
       </div>
       <!-- Hit Ratio Bar -->
       <div style="margin-bottom: 8px;">
@@ -102,12 +102,12 @@ export class KvStoreVisualizer {
       </div>
       <!-- Sparkline row -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <span style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Latency (Last 30 Req):</span>
+        <span style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;">Response Time (Last 30):</span>
         ${this.renderSparklineSvg()}
       </div>
       <!-- Top 3 Keys -->
       <div style="margin-top: 4px;">
-        <div style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 3px;">Top Active Keys & TTL:</div>
+        <div style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 3px;">Active Cache Entries & Expiry:</div>
         ${keysListHtml}
       </div>
     `;

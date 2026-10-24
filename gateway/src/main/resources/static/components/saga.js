@@ -65,25 +65,25 @@ export class SagaVisualizer {
   startSaga(sourceAcc, destAcc, amount, sourceShard = 0, destShard = 1) {
     this.activeSagasInFlight = 1;
     this.sagaStep = 1;
-    this.sagaStatusText = 'DEBIT_PENDING';
+    this.sagaStatusText = 'Debiting Source...';
     if (this.shards[sourceShard]) this.shards[sourceShard].activeState = 'debit';
     this.render();
 
     setTimeout(() => {
       this.sagaStep = 2;
-      this.sagaStatusText = 'CREDIT_PENDING';
+      this.sagaStatusText = 'Crediting Payee...';
       if (this.shards[destShard]) this.shards[destShard].activeState = 'credit';
       this.render();
 
       setTimeout(() => {
         this.sagaStep = 3;
-        this.sagaStatusText = 'SAGA_COMPLETED';
+        this.sagaStatusText = 'Settlement Complete';
         this.render();
 
         setTimeout(() => {
           this.activeSagasInFlight = 0;
           this.sagaStep = 0;
-          this.sagaStatusText = 'Idle';
+          this.sagaStatusText = 'Ready';
           this.shards.forEach(s => s.activeState = null);
           this.render();
         }, 3000);
@@ -94,7 +94,7 @@ export class SagaVisualizer {
   failSaga(sourceAcc, destAcc, amount, sourceShard = 0, destShard = 1) {
     this.activeSagasInFlight = 1;
     this.sagaStep = -1;
-    this.sagaStatusText = 'COMPENSATING_REFUND';
+    this.sagaStatusText = 'Refund Completed';
     if (this.shards[sourceShard]) this.shards[sourceShard].activeState = 'refund';
     if (this.shards[destShard]) this.shards[destShard].activeState = 'refund';
     this.render();
@@ -102,7 +102,7 @@ export class SagaVisualizer {
     setTimeout(() => {
       this.activeSagasInFlight = 0;
       this.sagaStep = 0;
-      this.sagaStatusText = 'Idle';
+      this.sagaStatusText = 'Ready';
       this.shards.forEach(s => s.activeState = null);
       this.render();
     }, 3500);
@@ -111,7 +111,7 @@ export class SagaVisualizer {
   render() {
     if (!this.container) return;
 
-    const tilesHtml = this.shards.map((s) => {
+    const tilesHtml = this.shards.map((s, idx) => {
       const isKilled = this.isShardKilled(s);
       let border = 'var(--border)';
       let bg = 'var(--surface)';
@@ -133,13 +133,13 @@ export class SagaVisualizer {
       return `
         <div style="flex: 1; min-width: 0; background: ${bg}; border: 1px solid ${border}; border-radius: 6px; padding: 6px 4px; text-align: center; transition: all 0.3s ease;">
           <div style="font-size: 10px; font-weight: 700; color: ${isKilled ? 'var(--red)' : 'var(--navy)'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-            ${s.name.split(' ')[0]} ${s.name.split(' ')[1]}
+            Partition ${idx}
           </div>
           ${isKilled ? `
             <div style="font-size: 10px; font-weight: 800; font-family: var(--font-mono); color: var(--red); margin: 3px 0;">
               ⛔ OFFLINE
             </div>
-            <div style="font-size: 8px; color: var(--red); text-transform: uppercase;">evicted</div>
+            <div style="font-size: 8px; color: var(--red); text-transform: uppercase;">standby</div>
           ` : `
             <div style="font-size: 13px; font-weight: 800; font-family: var(--font-mono); color: var(--ink);">
               ${s.accounts}
@@ -159,27 +159,27 @@ export class SagaVisualizer {
       <div class="telemetry-card-top">
         <div class="telemetry-title-group">
           <span class="telemetry-status-dot" style="background: ${this.killedNodes.size > 0 ? 'var(--red)' : (this.activeSagasInFlight > 0 ? 'var(--orange)' : 'var(--green)')};"></span>
-          <span>Shards & 2-Phase Saga</span>
+          <span>Distributed Database Ledger</span>
         </div>
         <span style="font-size: 10px; font-weight: 700; font-family: var(--font-mono); color: var(--orange); background: var(--fill-orange); padding: 1px 6px; border-radius: 4px;">
-          ACID + 2PC
+          Synchronized
         </span>
       </div>
       <div class="telemetry-hero-stat">
         <span class="num-tween" id="hero-shards-count">${activeCount} / ${this.shards.length}</span>
         <span style="font-size: 12px; font-weight: 600; color: var(--ink-2);">partitions ·</span>
         <span class="num-tween" id="hero-saga-inflight">${this.activeSagasInFlight}</span>
-        <span style="font-size: 12px; font-weight: 600; color: var(--ink-2);">sagas in flight</span>
+        <span style="font-size: 12px; font-weight: 600; color: var(--ink-2);">in-flight transfers</span>
       </div>
       <div class="telemetry-sub-metrics">
-        <span>Dual-ledger orchestration · zero financial drift</span>
+        <span>Multi-region data replication · Instant settlement</span>
       </div>
       <div style="display: flex; gap: 4px; margin-bottom: 10px;">
         ${tilesHtml}
       </div>
       <!-- 3-Dot Progression -->
       <div style="display: flex; align-items: center; justify-content: space-between; background: var(--fill-grey); border-radius: 6px; padding: 6px 12px; font-family: var(--font-mono); font-size: 11px;">
-        <span style="color: var(--ink-2); font-size: 10px; font-weight: 700;">SAGA:</span>
+        <span style="color: var(--ink-2); font-size: 10px; font-weight: 700;">SETTLEMENT:</span>
         <div style="display: flex; align-items: center; gap: 8px;">
           <div style="width: 8px; height: 8px; border-radius: 50%; background: ${dot1Color}; transition: background 0.3s;"></div>
           <span style="color: var(--muted); font-size: 9px;">→</span>

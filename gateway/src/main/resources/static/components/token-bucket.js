@@ -2,9 +2,9 @@ export class TokenBucketVisualizer {
   constructor(container) {
     this.container = container;
     this.buckets = {
-      login: { label: 'Auth / Login', capacity: 5, tokens: 5, rate: '5/m', refillRatePerSec: 5 / 60 },
-      transfer: { label: 'Transfers', capacity: 30, tokens: 30, rate: '30/m', refillRatePerSec: 30 / 60 },
-      enquiry: { label: 'Balance Enquiry', capacity: 120, tokens: 120, rate: '120/m', refillRatePerSec: 120 / 60 }
+      login: { label: 'Login Security', capacity: 5, tokens: 5, rate: '5/min', refillRatePerSec: 5 / 60 },
+      transfer: { label: 'Transfer Protection', capacity: 30, tokens: 30, rate: '30/min', refillRatePerSec: 30 / 60 },
+      enquiry: { label: 'Account Lookups', capacity: 120, tokens: 120, rate: '120/min', refillRatePerSec: 120 / 60 }
     };
     this.allowedCount = 0;
     this.throttledCount = 0;
@@ -100,7 +100,7 @@ export class TokenBucketVisualizer {
           <div style="display: flex; justify-content: space-between; font-size: 11px; font-family: var(--font-mono); color: var(--ink-2); margin-bottom: 2px;">
             <span>${b.label} <small style="color: var(--muted);">(${b.rate})</small></span>
             <span style="font-weight: 700; color: ${isFlashing ? 'var(--red)' : 'var(--ink)'};">
-              <strong>${currentInt}</strong> / ${b.capacity} tokens
+              <strong>${currentInt}</strong> / ${b.capacity} quota
             </span>
           </div>
           <div style="height: 7px; background: #e5e9f0; border-radius: 4px; overflow: hidden; border: ${isFlashing ? '1px solid var(--red)' : 'none'};">
@@ -114,26 +114,26 @@ export class TokenBucketVisualizer {
       <div class="telemetry-card-top">
         <div class="telemetry-title-group">
           <span class="telemetry-status-dot" style="background: ${this.retryAfterSec ? 'var(--red)' : 'var(--green)'};"></span>
-          <span>Token Bucket Rate Limiter</span>
+          <span>Security & Rate Shield</span>
         </div>
         ${this.retryAfterSec ? `
           <span style="font-size: 10px; font-weight: 800; font-family: var(--font-mono); color: var(--red); background: var(--fill-red); padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(214,69,69,0.3); animation: pulseRed 1s infinite;">
-            Retry-After: ${this.retryAfterSec}s
+            Retry In: ${this.retryAfterSec}s
           </span>
         ` : `
           <span style="font-size: 10px; font-weight: 700; font-family: var(--font-mono); color: var(--green); background: var(--fill-green); padding: 1px 6px; border-radius: 4px;">
-            Active · Enforcing
+            Protected
           </span>
         `}
       </div>
       <div class="telemetry-hero-stat">
         <span class="num-tween" id="hero-rl-allowed" style="color: var(--green);">${this.allowedCount}</span>
-        <span style="font-size: 12px; font-weight: 600; color: var(--ink-2);">allowed ·</span>
+        <span style="font-size: 12px; font-weight: 600; color: var(--ink-2);">verified ·</span>
         <span class="num-tween" id="hero-rl-throttled" style="color: ${this.throttledCount > 0 ? 'var(--red)' : 'var(--muted)'};">${this.throttledCount}</span>
-        <span style="font-size: 12px; font-weight: 600; color: var(--ink-2);">throttled</span>
+        <span style="font-size: 12px; font-weight: 600; color: var(--ink-2);">blocked</span>
       </div>
       <div class="telemetry-sub-metrics">
-        <span>Edge gateway bucket policing · sliding replenish</span>
+        <span>Adaptive bot protection & brute-force defense</span>
       </div>
       <div>
         ${barsHtml}

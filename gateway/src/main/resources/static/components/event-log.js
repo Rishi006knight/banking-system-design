@@ -36,7 +36,7 @@ export class EventLogStream {
     if (this.events.length === 0) {
       this.container.innerHTML = `
         <div style="font-family: var(--font-mono); font-size: 11px; color: var(--muted); text-align: center; padding: 12px;">
-          Telemetry event feed idle. Awaiting user actions...
+          Live audit feed active. Ready for transactions...
         </div>
       `;
       return;

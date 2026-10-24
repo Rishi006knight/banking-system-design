@@ -1481,7 +1481,7 @@ class ErodeBankingApp {
       const bList = this.getBeneficiariesList();
       if (!bList.some(b => b.acc === 'ACC-0000030')) {
         bList.push({
-          name: 'Pradeep Kumar (Scale-Out Demo)',
+          name: 'Pradeep Kumar (Scale-Out Shard)',
           acc: 'ACC-0000030',
           shard: 'Shard 3',
           port: '8084'
