@@ -32,18 +32,12 @@ export class SnowflakeVisualizer {
           <span class="telemetry-status-dot" style="background: var(--green);"></span>
           <span>Transaction Audit References</span>
         </div>
-        <span style="font-size: 10px; font-weight: 700; font-family: var(--font-mono); color: var(--green); background: var(--fill-green); padding: 1px 6px; border-radius: 4px;">
-          Tamper-Proof
-        </span>
       </div>
       <div class="telemetry-hero-stat">
         <span class="num-tween" id="hero-sf-count">${this.totalGenerated}</span>
         <span style="font-size: 12px; font-weight: 600; color: var(--ink-2);">Issued ·</span>
         <span style="color: var(--green); font-size: 18px; font-weight: 800;">0</span>
         <span style="font-size: 12px; font-weight: 600; color: var(--ink-2);">Duplicates</span>
-      </div>
-      <div class="telemetry-sub-metrics">
-        <span>Time-indexed, globally unique transaction tracking</span>
       </div>
       <!-- Reference Structure Bar -->
       <div style="display: flex; gap: 2px; height: 16px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;" title="High-Precision Timestamp | Node Origin | Sequence Index">

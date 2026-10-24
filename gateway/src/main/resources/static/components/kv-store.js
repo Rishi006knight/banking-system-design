@@ -82,17 +82,11 @@ export class KvStoreVisualizer {
           <span class="telemetry-status-dot" style="background: ${this.isMissFlashing ? 'var(--orange)' : 'var(--green)'};"></span>
           <span>Performance Cache Tier</span>
         </div>
-        <span style="font-size: 10px; font-weight: 700; font-family: var(--font-mono); color: var(--green); background: var(--fill-green); padding: 1px 6px; border-radius: 4px;">
-          Sub-ms Speed
-        </span>
       </div>
       <div class="telemetry-hero-stat">
         <span class="num-tween" id="hero-kv-hitratio" style="color: ${this.isMissFlashing ? 'var(--orange)' : 'var(--green)'};">${this.hitRatioPercent}%</span>
         <span style="font-size: 12px; font-weight: 600; color: var(--ink-2);">cache hit ·</span>
         <span class="num-tween" id="hero-kv-latency">${this.avgLatencyMs < 1 ? '<0.4 ms' : `${this.avgLatencyMs} ms`}</span>
-      </div>
-      <div class="telemetry-sub-metrics">
-        <span>Real-time balance caching & session acceleration</span>
       </div>
       <!-- Hit Ratio Bar -->
       <div style="margin-bottom: 8px;">

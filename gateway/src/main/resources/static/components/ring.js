@@ -190,16 +190,10 @@ export class HashRingVisualizer {
           <span class="telemetry-status-dot" style="background: ${this.killedNodes.size > 0 ? (activeNodesCount === 0 ? 'var(--red)' : 'var(--orange)') : 'var(--green)'};"></span>
           <span>Cluster Routing</span>
         </div>
-        <span style="font-size: 10px; font-weight: 700; font-family: var(--font-mono); color: var(--accent-blue); background: var(--fill-blue); padding: 1px 6px; border-radius: 4px;">
-          Balanced
-        </span>
       </div>
       <div class="telemetry-hero-stat">
         <span class="num-tween" id="hero-ring-nodes">${activeNodesCount} / ${nodeCount}</span>
         <span style="font-size: 13px; font-weight: 600; color: var(--ink-2);">nodes online</span>
-      </div>
-      <div class="telemetry-sub-metrics">
-        <span>High availability routing · Zero failover latency</span>
       </div>
       <div style="display: flex; justify-content: center; align-items: center; margin: 2px 0;">
         <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">

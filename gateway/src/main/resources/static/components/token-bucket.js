@@ -120,20 +120,13 @@ export class TokenBucketVisualizer {
           <span style="font-size: 10px; font-weight: 800; font-family: var(--font-mono); color: var(--red); background: var(--fill-red); padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(214,69,69,0.3); animation: pulseRed 1s infinite;">
             Retry In: ${this.retryAfterSec}s
           </span>
-        ` : `
-          <span style="font-size: 10px; font-weight: 700; font-family: var(--font-mono); color: var(--green); background: var(--fill-green); padding: 1px 6px; border-radius: 4px;">
-            Protected
-          </span>
-        `}
+        ` : ''}
       </div>
       <div class="telemetry-hero-stat">
         <span class="num-tween" id="hero-rl-allowed" style="color: var(--green);">${this.allowedCount}</span>
         <span style="font-size: 12px; font-weight: 600; color: var(--ink-2);">verified ·</span>
         <span class="num-tween" id="hero-rl-throttled" style="color: ${this.throttledCount > 0 ? 'var(--red)' : 'var(--muted)'};">${this.throttledCount}</span>
         <span style="font-size: 12px; font-weight: 600; color: var(--ink-2);">blocked</span>
-      </div>
-      <div class="telemetry-sub-metrics">
-        <span>Adaptive bot protection & brute-force defense</span>
       </div>
       <div>
         ${barsHtml}
